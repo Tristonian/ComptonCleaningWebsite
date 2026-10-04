@@ -27,9 +27,19 @@ export async function storeEnquiry(
   }
 
   const [row] = await db.query<{ id: string }>(
-    `INSERT INTO enquiries (name, address, postcode, contact, notes, locale, ip_hash)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-    [input.name, input.address, input.postcode, input.contact, input.notes, meta.locale, meta.ipHash],
+    `INSERT INTO enquiries (name, address, postcode, contact, notes, locale, ip_hash, lat, lng)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+    [
+      input.name,
+      input.address,
+      input.postcode,
+      input.contact,
+      input.notes,
+      meta.locale,
+      meta.ipHash,
+      input.point?.lat ?? null,
+      input.point?.lng ?? null,
+    ],
   );
   return { ok: true, id: String(row.id) };
 }

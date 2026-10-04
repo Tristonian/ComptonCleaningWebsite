@@ -6,6 +6,7 @@ import { getDb } from '@/lib/db';
 import { getEnv } from '@/lib/env';
 import { sendMail } from '@/lib/mail';
 import { checkEnquiry } from '@/lib/enquiry';
+import { mapsLink } from '@/lib/geo';
 import { markEmailed, storeEnquiry } from '@/lib/enquiries-store';
 import { isLocale } from '@/lib/content/shared';
 
@@ -30,13 +31,15 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
     postcode: form.get('postcode'),
     contact: form.get('contact'),
     notes: form.get('notes'),
+    lat: form.get('lat'),
+    lng: form.get('lng'),
   });
   if (!checked.ok) return { status: 'error', error: checked.error };
 
   const h = await headers();
   const requested = h.get('x-locale');
   const locale = isLocale(requested) ? requested : 'en';
-  const { name, address, postcode, contact, notes } = checked.value;
+  const { name, address, postcode, contact, notes, point } = checked.value;
 
   const ip = h.get('cf-connecting-ip') ?? h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   const ipHash = await sha256Hex(`${getEnv('SESSION_SECRET') ?? ''}|enquiry|${ip}`);
@@ -60,16 +63,17 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
 
   try {
     const isEmail = contact.includes('@');
-    // A plain Maps search link: no API key, opens the Maps app on a phone.
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, ${postcode}`)}`;
+    // A plain Maps link (no API key): the confirmed pin if there is one, else a search on the address.
+    const mapUrl = mapsLink({ address, postcode, point });
+    const pinText = point ? 'Pin confirmed by the customer' : 'No pin, address search only';
     const notesText = notes ? `\nNotes:\n${notes}\n` : '';
     const notesHtml = notes ? `<p><b>Notes:</b><br>${esc(notes).replace(/\n/g, '<br>')}</p>` : '';
     await sendMail({
       to,
       ...(isEmail ? { replyTo: contact } : {}),
       subject: `New enquiry from ${name}`,
-      text: `Name: ${name}\nAddress: ${address}\nPostcode: ${postcode}\nContact: ${contact}\nMap: ${mapUrl}\n${notesText}\nSent from the website contact form.`,
-      html: `<p><b>Name:</b> ${esc(name)}<br><b>Address:</b> ${esc(address)}<br><b>Postcode:</b> ${esc(postcode)}<br><b>Contact:</b> ${esc(contact)}<br><a href="${mapUrl}">Open in Google Maps</a></p>${notesHtml}<p>Sent from the website contact form.</p>`,
+      text: `Name: ${name}\nAddress: ${address}\nPostcode: ${postcode}\nContact: ${contact}\nMap (${pinText}): ${mapUrl}\n${notesText}\nSent from the website contact form.`,
+      html: `<p><b>Name:</b> ${esc(name)}<br><b>Address:</b> ${esc(address)}<br><b>Postcode:</b> ${esc(postcode)}<br><b>Contact:</b> ${esc(contact)}<br><a href="${mapUrl}">Open in Google Maps</a> (${pinText})</p>${notesHtml}<p>Sent from the website contact form.</p>`,
     });
     await markEmailed(db, id);
   } catch (err) {

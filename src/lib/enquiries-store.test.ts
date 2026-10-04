@@ -17,6 +17,8 @@ const checked = checkEnquiry({
   postcode: 'bs161aa',
   contact: '07700 900123',
   notes: 'Side gate',
+  lat: '51.5121',
+  lng: '-2.5111',
 });
 if (!checked.ok) throw new Error('fixture invalid');
 const input = checked.value;
@@ -29,6 +31,13 @@ describe('storeEnquiry', () => {
       'SELECT postcode, notes, emailed_at FROM enquiries',
     );
     expect(rows).toEqual([{ postcode: 'BS16 1AA', notes: 'Side gate', emailed_at: null }]);
+  });
+
+  it('stores the confirmed pin, and null when there is none', async () => {
+    await storeEnquiry(db, input, { ipHash: 'a', locale: 'en' });
+    await storeEnquiry(db, { ...input, point: null }, { ipHash: 'b', locale: 'en' });
+    const { rows } = await pg.query<{ lat: number | null; lng: number | null }>('SELECT lat, lng FROM enquiries ORDER BY id');
+    expect(rows).toEqual([{ lat: 51.5121, lng: -2.5111 }, { lat: null, lng: null }]);
   });
 
   it('rate limits one sender per hour but not a different sender', async () => {

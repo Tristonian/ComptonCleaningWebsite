@@ -1,3 +1,5 @@
+import { parsePoint, type LatLng } from './geo';
+
 /** Pure validation for the contact form, shared by the server action and its tests. */
 
 export interface EnquiryInput {
@@ -8,6 +10,8 @@ export interface EnquiryInput {
   contact: string;
   /** Optional free text from the customer (windows, access, gate codes, best times...). */
   notes: string;
+  /** The pin the customer confirmed (or their detected location). Optional; implausible values are dropped. */
+  point: LatLng | null;
 }
 
 export type EnquiryCheck = { ok: true; value: EnquiryInput } | { ok: false; error: string };
@@ -31,6 +35,7 @@ export function checkEnquiry(raw: Record<string, unknown>): EnquiryCheck {
     postcode: normalisePostcode(raw.postcode),
     contact: clean(raw.contact),
     notes,
+    point: parsePoint(raw.lat, raw.lng),
   };
   if (!value.name || !value.address || !value.contact || !String(raw.postcode ?? '').trim()) {
     return { ok: false, error: 'missing' };

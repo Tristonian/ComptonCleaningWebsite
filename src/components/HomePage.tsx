@@ -1,5 +1,6 @@
 import { Ed } from '@/components/Ed';
 import { ContactForm } from '@/components/ContactForm';
+import { getEnv } from '@/lib/env';
 import { HeroMenu, StickyBar } from '@/components/SiteNav';
 import {
   EMAIL_FROM,
@@ -15,8 +16,13 @@ import {
 const section = 'mx-auto max-w-2xl scroll-mt-14 px-4 py-10';
 const h2 = 'mb-4 text-3xl font-black uppercase italic tracking-tight text-brand-deep';
 
-/** Rendered by both `/` and `/cy`; the language comes from the layout, not from here. */
-export function HomePage() {
+/**
+ * Rendered by both `/` and `/cy`; the language comes from the layout, not from here.
+ * The Mapbox token is a PUBLIC token (restricted to our URLs in the Mapbox dashboard); it is read
+ * here at request time and handed to the form, so no build-time env var is needed.
+ */
+export async function HomePage() {
+  const mapboxToken = getEnv('MAPBOX_TOKEN');
   return (
     <main>
       {/* Hero: the business card. CCS, the squeegee, the web address, the phone number. */}
@@ -144,7 +150,7 @@ export function HomePage() {
         <Ed id="contact.form.title" as="h3" className="mb-3 text-xl font-bold">
           Contact form
         </Ed>
-        <ContactForm />
+        <ContactForm mapboxToken={mapboxToken} />
       </section>
 
       <section id="reviews" className={section}>

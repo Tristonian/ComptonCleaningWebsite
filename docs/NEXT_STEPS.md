@@ -63,6 +63,28 @@ pushed to GitHub**._
 - Sam's future `/admin` (calendar, slotting people in, enquiries, notes) is the reason for Postgres. Keep
   the round-planner/route work in WindowsWayfinder (CLAUDE.md); decide the overlap when starting it.
 
+### Location + map pin (session 2): built, tested locally, deployed to staging
+- Contact form: **"Use my location"** (browser geolocation -> postcodes.io reverse lookup -> fills the
+  postcode, and the street via Mapbox reverse geocoding), and a **draggable Mapbox pin** that appears once
+  there is a location (typed postcode -> postcodes.io lookup, or detected). Tap the map or drag to confirm;
+  the address/postcode follow the pin. Optional everywhere: the typed form still works if location is
+  blocked, the lookup fails or WebGL/the token fails (`PinMap` -> `onFail`).
+- Saved: `enquiries.lat/lng` (migration `0002_enquiry_location.sql`, applied to dev + staging). The
+  enquiry email's Google Maps link points at the pin ("Pin confirmed by the customer") or falls back to an
+  address search. Implausible coordinates (outside the UK/Ireland box) are dropped (`src/lib/geo.ts`).
+- Mapbox token: `MAPBOX_TOKEN` (public `pk.`, read at request time in `HomePage`, passed to the form;
+  Worker secret on staging; production still to set). **URL-restricted in the Mapbox dashboard (no
+  wildcards): verified 403 for other referrers and for no referrer.** Old token was rotated.
+  mapbox-gl is loaded on demand only when a pin first shows (`next/dynamic`, not on the first paint).
+- `Permissions-Policy` now `geolocation=(self)` (was `()`).
+- Verified locally on the dev branch: postcode -> map + pin, tapping the map moved the pin and filled
+  "98 Park Road", and a full submit stored lat/lng (test row removed). **NOT verified: the "Use my
+  location" button itself (needs a real browser permission prompt: try it on a phone), the map on a real
+  phone, drag (vs tap) on a touchscreen, and the pin on staging.**
+- Privacy: Mapbox and postcodes.io are called from the visitor's browser; the privacy policy (needed
+  before the Google consent screen is published) must say so. Mapbox's free allowance is ~50k map loads
+  and 100k geocoding requests a month (check current pricing); set a usage alert in the Mapbox account.
+
 ### Added later in session 2 (all on staging)
 - Logo: the card artwork (`public/ccs-logo.png`) replaces the CSS wordmark; its edges are feathered
   into the hero gradient (`.hero`, `.logo-feather` in `globals.css`). Low-res: ask Sam for the vector/original.
@@ -78,22 +100,9 @@ pushed to GitHub**._
   Dev only: `next.config.mjs` omits `X-Frame-Options` in development so the site can be framed at
   phone width; production still sends DENY (verified on staging).
 
-### Ideas from Tristan, not built
-- [ ] **Detect my location** as an alternative to typing: a "Use my location" button ->
-      `navigator.geolocation` -> reverse-geocode to a postcode (free, key-less: postcodes.io) -> fills
-      postcode/address. Needs `geolocation=(self)` in the `Permissions-Policy` header (currently `()`),
-      and a graceful fallback when permission is denied. A postcode centroid is not a house, so Sam
-      still gets the typed address.
-- **Decision (Tristan, 2026-10-04): Mapbox** for the map pin (about 50k map loads and 100k geocoding
-  requests free a month, no Google billing; verify current limits). Needs a Mapbox account and a
-  URL-restricted public token (Sam's account, or shared with WindowsWayfinder: decide once).
-  postcodes.io for "use my location" -> postcode. The options below are kept for the record.
-- [ ] **Map pin to confirm** the location, included in the enquiry email. Options: Google Maps JS +
-      Geocoding (best UK address accuracy; needs a Google Cloud billing account and a referrer-restricted
-      key; there is a monthly free allowance per product, check current pricing) vs key-less
-      OpenStreetMap/Leaflet tiles + postcodes.io (free, postcode-level). WindowsWayfinder has NOT chosen
-      a maps provider (its NEXT_STEPS lists Google vs Mapbox as an open question): decide once, together.
-      Loading Google scripts also affects the privacy/cookie wording.
+### Ideas from Tristan
+- [x] **Detect my location** and **map pin** (Mapbox, decided 2026-10-04): built, see "Location + map pin" above.
+  WindowsWayfinder still has no maps provider: reuse this Mapbox account/decision if it needs one.
 - [ ] **Achievements** like HairByRachel (`src/lib/achievements*.ts` there): later.
 - Database access control: RLS is on for every table (migration + `ensure_rls` trigger), the Neon Data
   API and Neon Auth are OFF, and the browser never talks to the database. Keep it that way: only server
