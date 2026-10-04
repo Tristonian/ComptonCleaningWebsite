@@ -33,7 +33,13 @@ export const RATE_LIMIT = { perSenderPerHour: 3, perSiteDay: 40 } as const;
 
 const MAX = { name: 100, address: 300, postcode: 10, phone: 30, email: 254, notes: 1000 } as const;
 
-export function checkEnquiry(raw: Record<string, unknown>): EnquiryCheck {
+/** The server passes validators built from the (editable) option lists; the default is the lists in code. */
+export interface OptionValidators {
+  isService?: (v: string) => boolean;
+  isSource?: (v: string) => boolean;
+}
+
+export function checkEnquiry(raw: Record<string, unknown>, valid: OptionValidators = {}): EnquiryCheck {
   const clean = (v: unknown) => (typeof v === 'string' ? v.trim().replace(/\s+/g, ' ') : '');
   // Notes keep their line breaks (collapsed to at most one blank line), unlike the one-line fields.
   const notes = (typeof raw.notes === 'string' ? raw.notes : '')
@@ -50,10 +56,10 @@ export function checkEnquiry(raw: Record<string, unknown>): EnquiryCheck {
 
   if (!name || !address || !rawPostcode) return { ok: false, error: 'missing' };
   const service = clean(raw.service);
-  if (!isService(service)) return { ok: false, error: 'service' };
+  if (!(valid.isService ?? isService)(service)) return { ok: false, error: 'service' };
   // An unknown or blank source is simply "didn't say": it is optional and never worth refusing for.
   const rawSource = clean(raw.source);
-  const source = isSource(rawSource) ? rawSource : '';
+  const source = (valid.isSource ?? isSource)(rawSource) ? rawSource : '';
   if (!rawPhone && !rawEmail) return { ok: false, error: 'contact-missing' };
   if (
     name.length > MAX.name ||

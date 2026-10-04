@@ -25,6 +25,23 @@ fluent speaker) ships with Phase 2 so the pencil edits either language from day 
 database backups (Neon history retention + scheduled export), security headers/CSP, rate limiting on auth routes, accessibility
 pass, DNS cutover, Google Business Profile and Search Console. Exit: live on the real domain.
 
+## SEO: do it properly (Tristan 2026-10-04: "SEO the heck out of this")
+A first-class goal, not a Phase 1 footnote. Local search is how Sam gets customers. To do, roughly in order:
+- **Basics that ship with go-live:** unique `<title>` and meta description per page (and per language), canonical URLs,
+  `hreflang` between `/` and `/cy`, `robots.txt`, `sitemap.xml`, Open Graph/Twitter cards with the logo, `lang` on `<html>` (done).
+- **Local-business structured data:** JSON-LD `LocalBusiness`/`HomeAndConstructionBusiness` with name, phone, area served,
+  opening hours, services (generated from the live services, including ones Sam adds), sameAs links, and real reviews only
+  once there are some (never invented).
+- **Area/service pages:** one real page per town (Bristol, Chepstow, Caldicot, Newport; BS16, BS5) and per service with
+  genuine local content and photos; internal links from the home page. The services Sam adds should be able to get their own page.
+- **Images:** real `alt` text from the captions Sam writes, width/height set (done for blocks), lazy loading (done), modern
+  formats (done), descriptive file/route names.
+- **Performance and Core Web Vitals:** mobile Lighthouse in the green; the dynamic render means caching (tags) is worth
+  doing before launch (see NEXT_STEPS). Check the collapsing hero for layout shift (CLS).
+- **Off-page:** Google Business Profile (the Maps listing; resolve which logo is canonical), Search Console and Bing
+  Webmaster verification, citations (Yell, Checkatrade-style directories, Facebook), a Google review link and review requests.
+- **Measure:** privacy-friendly analytics (cookie-free) and Search Console queries to guide what to write next.
+
 ## Later / maybe
 Resend notification emails, quote-request form, gallery page, link-out to Wayfinder for
 existing customers.

@@ -43,6 +43,8 @@ export function isSource(v: unknown): v is string {
 }
 
 export function labelOf(list: readonly Option[], value: string, locale: 'en' | 'cy' = 'en'): string {
+  // Once Sam has edited a list, enquiries store `custom:<English label>` so history survives renames and removals.
+  if (value.startsWith('custom:')) return value.slice('custom:'.length);
   const o = list.find((x) => x.value === value);
   return o ? o[locale] : '';
 }

@@ -5,7 +5,8 @@ import { useActionState, useRef, useState, type FormEvent } from 'react';
 import { ContactSent, type SentSnapshot } from '@/components/ContactSent';
 import { Ed } from '@/components/Ed';
 import { useEditMode } from '@/components/EditMode';
-import { SERVICES, SOURCES, labelOf } from '@/lib/enquiry-options';
+import { labelOf, type Option } from '@/lib/enquiry-options';
+import { OptionsEditor } from '@/components/OptionsEditor';
 import { sendEnquiry, type ContactState } from '@/app/contact-actions';
 import { formatPhone, normaliseEmail, normalisePhone, normalisePostcode } from '@/lib/enquiry';
 import { isPlausibleUkPoint, type LatLng } from '@/lib/geo';
@@ -25,10 +26,28 @@ type Locating = 'idle' | 'working' | 'denied' | 'failed';
  * be shown (no token, blocked, no WebGL) or there is no pin yet, nothing is forced and typing
  * still works. Phone, email and postcode are checked as they type; the server checks them again.
  */
-export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
+export function ContactForm({
+  mapboxToken,
+  serviceOptions,
+  sourceOptions,
+  extraServices = [],
+}: {
+  mapboxToken?: string;
+  /** The editable drop-down lists (defaults until Sam edits them), as saved. */
+  serviceOptions: Option[];
+  sourceOptions: Option[];
+  /** Services Sam added (value `svc-<id>`), offered just before "Something else". */
+  extraServices?: Option[];
+}) {
   const [state, action, pending] = useActionState<ContactState, FormData>(sendEnquiry, { status: 'idle' });
   const { locale } = useEditMode();
   const [service, setService] = useState('');
+  // Services Sam added slot in before a trailing "Something else", else go on the end.
+  const last = serviceOptions.at(-1);
+  const services =
+    last?.value === 'other'
+      ? [...serviceOptions.slice(0, -1), ...extraServices, last]
+      : [...serviceOptions, ...extraServices];
   const [address, setAddress] = useState('');
   const [postcode, setPostcode] = useState('');
   const [phone, setPhone] = useState('');
@@ -172,8 +191,8 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
     const lng = Number(text('lng'));
     setSnapshot({
       name: text('name'),
-      service: labelOf(SERVICES, text('service'), locale),
-      source: labelOf(SOURCES, text('source'), locale),
+      service: labelOf(services, text('service'), locale),
+      source: labelOf(sourceOptions, text('source'), locale),
       address: text('address'),
       postcode: normalisePostcode(text('postcode')) || text('postcode'),
       phone: normalisePhone(text('phone')) ? formatPhone(normalisePhone(text('phone'))) : '',
@@ -201,13 +220,19 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
           className={`${field} ${attempted && !service ? fieldBad : ''}`}
         >
           <option value="">{locale === 'cy' ? 'Dewiswch wasanaeth' : 'Choose a service'}</option>
-          {SERVICES.map((o) => (
+          {services.map((o) => (
             <option key={o.value} value={o.value}>
               {o[locale]}
             </option>
           ))}
         </select>
       </label>
+      <OptionsEditor
+        list="service"
+        title="Edit the service choices"
+        options={serviceOptions}
+        note="Services you add in the Services section appear in this list automatically, so you don't need to add them here."
+      />
       {attempted && !service && (
         <Ed id="contact.form.service.error" as="p" className={errorText}>
           Please choose the service you are interested in.
@@ -218,13 +243,14 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
         <Ed id="contact.form.source">Where did you hear about us? (optional)</Ed>
         <select name="source" defaultValue="" className={field}>
           <option value="">{locale === 'cy' ? 'Dewiswch un' : 'Choose one'}</option>
-          {SOURCES.map((o) => (
+          {sourceOptions.map((o) => (
             <option key={o.value} value={o.value}>
               {o[locale]}
             </option>
           ))}
         </select>
       </label>
+      <OptionsEditor list="source" title="Edit the &lsquo;Where did you hear about us&rsquo; choices" options={sourceOptions} />
 
       <button
         type="button"

@@ -8,6 +8,7 @@ import { listBlocks } from '@/lib/blocks';
 import { zoneOrder } from '@/lib/blocks-shared';
 import { getHiddenSections } from '@/lib/sections';
 import { listServices } from '@/lib/services-custom';
+import { getOptions } from '@/lib/form-options';
 import { AppearanceEditor } from '@/components/AppearanceEditor';
 import { HeroHeader } from '@/components/HeroHeader';
 import { HeroMenu, StickyBar } from '@/components/SiteNav';
@@ -33,11 +34,13 @@ const h2 = 'mb-4 text-3xl font-black uppercase italic tracking-tight text-brand-
  */
 export async function HomePage() {
   const mapboxToken = getEnv('MAPBOX_TOKEN');
-  const [appearance, blocks, services, hidden] = await Promise.all([
+  const [appearance, blocks, services, hidden, serviceList, sourceList] = await Promise.all([
     getAppearance(),
     listBlocks(),
     listServices(),
     getHiddenSections(),
+    getOptions('service'),
+    getOptions('source'),
   ]);
   const order = zoneOrder(services.map((s) => s.id));
   const zb = (zone: string) => blocks.filter((b) => b.zone === zone);
@@ -202,7 +205,14 @@ export async function HomePage() {
         <Ed id="contact.form.title" as="h3" className="mb-3 text-xl font-bold">
           Contact form
         </Ed>
-        <ContactForm mapboxToken={mapboxToken} />
+        <ContactForm
+          mapboxToken={mapboxToken}
+          serviceOptions={serviceList.options}
+          sourceOptions={sourceList.options}
+          extraServices={services
+            .filter((svc) => !hide(`svc-${svc.id}`))
+            .map((svc) => ({ value: `svc-${svc.id}`, en: svc.titleEn, cy: svc.titleCy || svc.titleEn }))}
+        />
       </section>
 
       <Hideable id="reviews" label="Reviews" hidden={hide('reviews')}>
