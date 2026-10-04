@@ -5,16 +5,28 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
+import { TextStyle } from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import TextAlign from '@tiptap/extension-text-align';
+import { FontSize } from '@/lib/tiptap-font-size';
 import { RICH_CLASSES } from '@/lib/rich';
 
 /**
  * The rich text box Sam writes with, adapted from HairByRachel's `RichTextEditor` and cut down to
- * what a brochure site needs: bold, italic, underline, bullets, numbers, links. Enter starts a new
+ * what a brochure site needs: size, colour, bold, italic, underline, alignment, bullets, numbers, links. Enter starts a new
  * paragraph and Enter on an empty line leaves a visible blank line, which is the whole point (ADR 0007).
  * The server sanitises again on save; this toolbar just keeps the common case sensible.
  *
  * `value` is only read once, when the box mounts: give it a `key` to load different text.
  */
+const FONT_SIZES = [
+  { label: 'Size', value: '' },
+  { label: 'Small', value: '14px' },
+  { label: 'Large', value: '20px' },
+  { label: 'X-Large', value: '28px' },
+  { label: 'Huge', value: '36px' },
+];
+
 export function RichTextEditorImpl({
   value,
   onChange,
@@ -41,6 +53,10 @@ export function RichTextEditorImpl({
       }),
       Underline,
       Link.configure({ openOnClick: false, autolink: false }),
+      TextStyle,
+      FontSize,
+      Color,
+      TextAlign.configure({ types: ['paragraph'] }),
     ],
     content: value,
     autofocus: autoFocus ? 'end' : false,
@@ -75,6 +91,39 @@ export function RichTextEditorImpl({
           onClick={() => editor.chain().focus().toggleUnderline().run()}
         >
           <u>U</u>
+        </Tool>
+        <select
+          aria-label="Text size"
+          className="h-9 rounded-lg border border-ink/20 bg-white px-1 text-sm text-ink"
+          value={(editor.getAttributes('textStyle').fontSize as string | undefined) ?? ''}
+          onChange={(e) => {
+            const size = e.target.value;
+            if (size) editor.chain().focus().setMark('textStyle', { fontSize: size }).run();
+            else editor.chain().focus().setMark('textStyle', { fontSize: null }).removeEmptyTextStyle().run();
+          }}
+        >
+          {FONT_SIZES.map((f) => (
+            <option key={f.label} value={f.value}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+        <input
+          type="color"
+          aria-label="Text colour"
+          title="Text colour"
+          className="h-9 w-9 cursor-pointer rounded-lg border border-ink/20 bg-white p-0.5"
+          value={(editor.getAttributes('textStyle').color as string | undefined) ?? '#1a1a1a'}
+          onChange={(e) => editor.chain().focus().setColor(e.target.value).run()}
+        />
+        <Tool label="Align left" active={editor.isActive({ textAlign: 'left' })} onClick={() => editor.chain().focus().setTextAlign('left').run()}>
+          ⯇
+        </Tool>
+        <Tool label="Centre" active={editor.isActive({ textAlign: 'center' })} onClick={() => editor.chain().focus().setTextAlign('center').run()}>
+          ≡
+        </Tool>
+        <Tool label="Align right" active={editor.isActive({ textAlign: 'right' })} onClick={() => editor.chain().focus().setTextAlign('right').run()}>
+          ⯈
         </Tool>
         <Tool
           label="Bullet list"

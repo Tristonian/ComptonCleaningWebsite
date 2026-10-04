@@ -38,6 +38,13 @@ describe('sanitising', () => {
     );
     expect(out).toBe('<p>Hi <strong>there</strong></p><ul><li>a</li></ul>');
   });
+  it('keeps size, colour and alignment but nothing else in a style', () => {
+    const out = sanitizeRichHtml(
+      '<p style="text-align:center;position:fixed"><span style="font-size:28px;color:#ff0000;background:url(x)">Hi</span></p>',
+    );
+    expect(out).toBe('<p style="text-align:center"><span style="font-size:28px;color:#ff0000">Hi</span></p>');
+    expect(sanitizeRichHtml('<p><span style="font-size:999em">x</span></p>')).toBe('<p><span>x</span></p>');
+  });
   it('only allows safe link schemes and opens external links in a new tab', () => {
     expect(sanitizeRichHtml('<p><a href="javascript:alert(1)">x</a></p>')).not.toContain('javascript');
     expect(sanitizeRichHtml('<p><a href="https://example.com">x</a></p>')).toContain('target="_blank"');

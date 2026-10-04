@@ -9,8 +9,13 @@ import { MAX_RICH_LENGTH, looksLikeHtml, richToPlain } from '@/lib/rich';
  */
 export function sanitizeRichHtml(html: string): string {
   const clean = sanitizeHtml(html, {
-    allowedTags: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li'],
-    allowedAttributes: { a: ['href', 'target', 'rel'] },
+    allowedTags: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'span'],
+    allowedAttributes: { a: ['href', 'target', 'rel'], span: ['style'], p: ['style'] },
+    // Only the three things the toolbar makes, each with a tight value pattern.
+    allowedStyles: {
+      span: { 'font-size': [/^\d{1,2}px$/], color: [/^#[0-9a-f]{3,8}$/i] },
+      p: { 'text-align': [/^(left|center|right)$/] },
+    },
     allowedSchemes: ['http', 'https', 'mailto', 'tel'],
     transformTags: {
       // Internal links stay in the tab; external ones open a new one without leaking the referrer.
