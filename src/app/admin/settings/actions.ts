@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { getAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { addPaymentMethod, moveInRound, removePaymentMethod, renamePaymentMethod, updateRound } from '@/lib/customers';
+import { addPaymentMethod, moveInRound, removePaymentMethod, renamePaymentMethod, setRoundOrder, updateRound } from '@/lib/customers';
 import { setCallHours } from '@/lib/schedule';
 
 /**
@@ -59,4 +59,12 @@ export async function moveInRoundAction(form: FormData): Promise<void> {
   const round = text(form, 'roundId');
   const r = await moveInRound(round, text(form, 'customerId'), text(form, 'step') === 'up' ? -1 : 1, a.email, getDb());
   redirect(flash(`/admin/rounds?round=${/^\d+$/.test(round) ? round : ''}`, r.ok ? 'ok' : 'error', r.ok ? 'Moved.' : r.error));
+}
+
+/** Save the order the planner proposed. The ids come back from the page, but only members of the round are used. */
+export async function applyRoundPlanAction(form: FormData): Promise<void> {
+  const a = await admin();
+  const round = text(form, 'roundId');
+  const r = await setRoundOrder(round, form.getAll('ids').map(String), a.email, getDb());
+  redirect(flash(`/admin/rounds?round=${/^\d+$/.test(round) ? round : ''}`, r.ok ? 'ok' : 'error', r.ok ? 'Order saved. The Work screen now follows it.' : r.error));
 }

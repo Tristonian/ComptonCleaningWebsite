@@ -179,6 +179,12 @@ export default async function WorkPage({
               </nav>
             )}
 
+            {round && (
+              <a href={`/admin/rounds?round=${round.id}&plan=due`} className="flex min-h-12 items-center justify-center rounded-xl text-base font-bold text-brand-deep ring-1 ring-brand-deep/40 active:bg-brand/10">
+                🧭 Best order for this week
+              </a>
+            )}
+
             {round && roundWeather && <WeatherWeek title={`Weather for ${round.name}`} days={roundWeather} today={today} highlight={roundDay} />}
 
             {due.length === 0 ? (
