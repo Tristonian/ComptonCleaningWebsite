@@ -28,7 +28,7 @@ hand the day to turn-by-turn navigation.
 
 The token in use for the map is a public token restricted to our website addresses. Mapbox checks that restriction in
 the `Referer` header, which a server-side call does not have, so the server states the site as its referer
-(`SITE_URL`). If Mapbox still refuses, or the network fails, the page **falls back to straight-line estimates**
+(`SITE_URL`). Checked with curl on 2026-10-04: with no referer the Matrix API answers 403, with the staging or production site as referer it answers 200. If Mapbox ever refuses, or the network fails, the page **falls back to straight-line estimates**
 (1.35 detour factor, 32 km/h) and says "estimated" so Sam is never shown a precise-looking number that is a guess.
 A secret `MAPBOX_SERVER_TOKEN` (a token without URL restriction, Matrix scope) takes precedence if one is ever set; that is
 the robust fix and is a hand step for Tristan (`wrangler secret put MAPBOX_SERVER_TOKEN`, then check it is non-empty).
