@@ -45,6 +45,12 @@ describe('sanitising', () => {
     expect(out).toBe('<p style="text-align:center"><span style="font-size:28px;color:#ff0000">Hi</span></p>');
     expect(sanitizeRichHtml('<p><span style="font-size:999em">x</span></p>')).toBe('<p><span>x</span></p>');
   });
+  it('keeps headings, quotes and rules, and recognises a value that opens with a heading', () => {
+    expect(sanitizeRichHtml('<h2>Title</h2><blockquote><p>q</p></blockquote><hr><h4>x</h4>')).toBe(
+      '<h2>Title</h2><blockquote><p>q</p></blockquote><hr />x',
+    );
+    expect(toRichHtml('<h2>Title</h2><p>a</p>')).toBe('<h2>Title</h2><p>a</p>');
+  });
   it('only allows safe link schemes and opens external links in a new tab', () => {
     expect(sanitizeRichHtml('<p><a href="javascript:alert(1)">x</a></p>')).not.toContain('javascript');
     expect(sanitizeRichHtml('<p><a href="https://example.com">x</a></p>')).toContain('target="_blank"');

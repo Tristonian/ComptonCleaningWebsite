@@ -4,17 +4,20 @@ import { MAX_RICH_LENGTH, looksLikeHtml, richToPlain } from '@/lib/rich';
 
 /**
  * The allow-list for the rich text Sam writes with the pencil (ADR 0007). Runs on every save, so
- * whatever reaches the database is safe to render with dangerouslySetInnerHTML. Deliberately
- * small: paragraphs, line breaks, bold, italic, underline, lists and links. No styles, no images.
+ * whatever reaches the database is safe to render with dangerouslySetInnerHTML. The same set as
+ * HairByRachel's editor minus images: headings, quotes, rules, lists, links, bold/italic/underline,
+ * and size/colour/alignment as tightly-patterned inline styles.
  */
 export function sanitizeRichHtml(html: string): string {
   const clean = sanitizeHtml(html, {
-    allowedTags: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'span'],
-    allowedAttributes: { a: ['href', 'target', 'rel'], span: ['style'], p: ['style'] },
+    allowedTags: ['p', 'br', 'strong', 'em', 'u', 'a', 'ul', 'ol', 'li', 'span', 'h2', 'h3', 'blockquote', 'hr'],
+    allowedAttributes: { a: ['href', 'target', 'rel'], span: ['style'], p: ['style'], h2: ['style'], h3: ['style'] },
     // Only the three things the toolbar makes, each with a tight value pattern.
     allowedStyles: {
       span: { 'font-size': [/^\d{1,2}px$/], color: [/^#[0-9a-f]{3,8}$/i] },
       p: { 'text-align': [/^(left|center|right)$/] },
+      h2: { 'text-align': [/^(left|center|right)$/] },
+      h3: { 'text-align': [/^(left|center|right)$/] },
     },
     allowedSchemes: ['http', 'https', 'mailto', 'tel'],
     transformTags: {

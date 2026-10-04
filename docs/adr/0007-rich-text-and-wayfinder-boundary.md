@@ -12,10 +12,10 @@
 ### Rich text
 - **Body copy is rich text; labels, headings and short strings stay plain.** An `<Ed rich>` node,
   a text block (ADR 0006) and a service description are edited in a tiptap box adapted from
-  HairByRachel's `RichTextEditor`, cut down to bold, italic, underline, bullets, numbers and links.
+  HairByRachel's `RichTextEditor`, the same toolbar minus inline images.
   Enter starts a new paragraph. No headings, colours, sizes or images: the site's typography stays
   in code (ADR 0004).
-- **Storage is still one string per value.** Rich values are a small HTML subset (`p br strong em u a ul ol li`).
+- **Storage is still one string per value.** Rich values are an HTML subset matching HairByRachel's editor minus images (`p h2 h3 blockquote hr br strong em u a ul ol li`, plus tightly-patterned size, colour and alignment styles).
   Plain values from before this change are unchanged and are converted when read (`toRichHtml`: a blank
   line becomes a new paragraph, a single newline a line break, markup is escaped). Nothing was migrated.
 - **Sanitised on every save, on the server** (`sanitize-html`, `src/lib/rich-sanitize.ts`), so what reaches

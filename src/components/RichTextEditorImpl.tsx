@@ -40,13 +40,11 @@ export function RichTextEditorImpl({
 }) {
   const editor = useEditor({
     extensions: [
-      // Headings, code, quotes, rules and strikethrough are not offered, so they are not parsed either.
+      // Same set as Rachel's editor: two heading sizes, quotes and rules are on; code and strikethrough are not offered.
       StarterKit.configure({
-        heading: false,
-        blockquote: false,
+        heading: { levels: [2, 3] },
         codeBlock: false,
         code: false,
-        horizontalRule: false,
         strike: false,
         link: false,
         underline: false,
@@ -56,7 +54,7 @@ export function RichTextEditorImpl({
       TextStyle,
       FontSize,
       Color,
-      TextAlign.configure({ types: ['paragraph'] }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
     content: value,
     autofocus: autoFocus ? 'end' : false,
@@ -124,6 +122,18 @@ export function RichTextEditorImpl({
         </Tool>
         <Tool label="Align right" active={editor.isActive({ textAlign: 'right' })} onClick={() => editor.chain().focus().setTextAlign('right').run()}>
           ⯈
+        </Tool>
+        <Tool label="Heading" active={editor.isActive('heading', { level: 2 })} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>
+          H2
+        </Tool>
+        <Tool label="Subheading" active={editor.isActive('heading', { level: 3 })} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}>
+          H3
+        </Tool>
+        <Tool label="Quote" active={editor.isActive('blockquote')} onClick={() => editor.chain().focus().toggleBlockquote().run()}>
+          ❝
+        </Tool>
+        <Tool label="Divider line" onClick={() => editor.chain().focus().setHorizontalRule().run()}>
+          —
         </Tool>
         <Tool
           label="Bullet list"

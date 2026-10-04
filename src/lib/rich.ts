@@ -14,7 +14,7 @@ export function escapeHtml(text: string): string {
 
 /** True for values the rich editor saved: they always open with a paragraph or a list. */
 export function looksLikeHtml(value: string): boolean {
-  return /^\s*<(p|ul|ol)[\s>]/i.test(value);
+  return /^\s*<(p|h2|h3|ul|ol|blockquote|hr)[\s>/]/i.test(value);
 }
 
 /** Plain text to paragraphs: a blank line starts a new paragraph, a single newline is a line break. */
@@ -59,4 +59,4 @@ export function richToPlain(html: string): string {
 
 /** Tailwind classes that give rich text its paragraph gaps and lists (Tailwind's reset removes both). */
 export const RICH_CLASSES =
-  '[&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_a]:underline [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0';
+  '[&_p]:mb-3 [&_p:last-child]:mb-0 [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_a]:underline [&_ul:last-child]:mb-0 [&_ol:last-child]:mb-0 [&_h2]:mb-2 [&_h2]:mt-5 [&_h2]:text-2xl [&_h2]:font-bold [&_h3]:mb-1 [&_h3]:mt-4 [&_h3]:text-xl [&_h3]:font-bold [&_blockquote]:mb-3 [&_blockquote]:border-l-2 [&_blockquote]:border-ink/30 [&_blockquote]:pl-3 [&_blockquote]:italic [&_hr]:my-4 [&_hr]:border-t [&_hr]:border-ink/20';
