@@ -13,8 +13,9 @@
 - **Body copy is rich text; labels, headings and short strings stay plain.** An `<Ed rich>` node,
   a text block (ADR 0006) and a service description are edited in a tiptap box adapted from
   HairByRachel's `RichTextEditor`, the same toolbar minus inline images.
-  Enter starts a new paragraph. No headings, colours, sizes or images: the site's typography stays
-  in code (ADR 0004).
+  Enter starts a new paragraph. It was first cut down to a handful of buttons; that was a mistake
+  (Tristan, 2026-10-04) and the full set is back. Inline images are the only thing not brought over,
+  because photos already have their own blocks (ADR 0006).
 - **Storage is still one string per value.** Rich values are an HTML subset matching HairByRachel's editor minus images (`p h2 h3 blockquote hr br strong em u a ul ol li`, plus tightly-patterned size, colour and alignment styles).
   Plain values from before this change are unchanged and are converted when read (`toRichHtml`: a blank
   line becomes a new paragraph, a single newline a line break, markup is escaped). Nothing was migrated.
