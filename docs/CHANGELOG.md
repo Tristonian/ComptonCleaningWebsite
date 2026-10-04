@@ -2,6 +2,25 @@
 
 Newest first. Led by what changed for Sam, then the numbers and what is still untested.
 
+## 2026-10-04 (session 7, overnight): calendar, call hours, earnings, route planner
+
+Built unattended while Tristan slept. **On staging only; production still runs the session 6 code.**
+
+**For Sam**
+- **Call button follows your hours.** Set the usual hours per weekday in Settings (a day left off = no calls, so weekends are off); outside them the website shows "I'm not working right now. Leave me a message." instead of the phone number and Call button (Text, WhatsApp and Email stay). If no hours are set, or they cannot be read, the Call button simply shows.
+- **Calendar** (new 📅 tab): a week as day cards and a month grid. Add a round to a day (one tap for a round's usual day), extra call hours, or "no calls all day". Today's rounds show at the top of the Work screen.
+- **Earnings** (from Work, or the Home screen): money received for today, this week, this month, last month, this year or any dates; by week, by way of paying, top extras, top customers, work done vs money received, missed visits, and what is still owed. Download as a spreadsheet. Money counts on the day it was paid, not the day of the visit.
+- **Best order for a round:** Rounds screen, 🧭 Best order (whole round, or those due this week). It uses real drive times, shows each leg and the total against your current order, and "Use this order" saves it; the Work screen then lists that round in that order. Google Maps buttons open the day for navigation (nine stops a button).
+- **Settings hub** (⚙️ tab): Rounds (rename, set the day, move stops up and down), call hours, ways of paying (add, rename, remove), Templates, Logo and colour.
+- **Imported customers:** "✅ Set up several" on Customers ticks many and sets price, every-N-weeks, round and usual payment at once ("To set up" filter shows who still needs it); a customer's page has a "last cleaned" date to correct when they are next due.
+- After pressing DONE the Work screen offers 📷 Add photos for that visit; the visit list shows photo counts.
+
+**Under the hood:** ADRs 0011 and 0012; migrations 0012 (`call_hours`, `schedule_entries`) and 0013 (`jobs.paid_on`); `schedule.ts`, `schedule-shared.ts`, `earnings.ts`, `route.ts` (exact up to 12 stops, 2-opt beyond), `travel.ts` (Mapbox Matrix, chunked, falls back to estimates), `round-plan.ts`. The server calls Mapbox with the site as its referer (checked: 403 without, 200 with); a `MAPBOX_SERVER_TOKEN` secret would be more robust and is optional.
+
+**Numbers:** 275 tests pass in 35 files (52 new), typecheck and build clean. Staging Worker `6ccd3062`, Neon staging migrated through 0013 (staging call hours were set to a never-open window to prove the away message on the wire, then removed). Production Worker `c157c645`, Neon production only through 0011.
+
+**Still untested:** every new screen on a real phone; the planner against real Mapbox through the Worker (only the same request by curl and fakes in tests); the up/down arrows; the calendar's add forms; the CSV opened in a spreadsheet; the away message in Welsh (machine-drafted). Visit photos are still served by the public `/img/<hash>` route (ADR 0009 open question, not changed).
+
 ## 2026-10-04 (session 6): Templates, and the work tracker reaches production
 
 **For Sam**
