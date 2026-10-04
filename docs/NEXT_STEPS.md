@@ -101,6 +101,12 @@ pushed to GitHub**._
   Google Maps" and "Get directions" buttons, tap-to-call phone and mailto email, and an honest pin label
   (confirmed / approximate postcode centre / none). Needs checking in a real inbox (Gmail + phone) and in
   Outlook/Apple Mail.
+- **"Use my location" only places the pin**: the visitor must still tap/drag it ("Location confirmed" only
+  appears after they do). Whatever location or a moved pin filled in is shown in a small card, "We found
+  this address. Is it right?" (street + postcode, Yes / No I'll fix it); Send is blocked until they answer or
+  edit the fields. Phone placeholder is the generic `07xxx xxxxxx` (a real-looking example can read as a
+  real person's number). Tested in a browser frame at 375px with a real tap; NOT tested with a real phone's
+  geolocation prompt.
 - Logo is white-on-transparent (`public/ccs-logo.png`, original in `docs/assets/`): no soft edge.
 - Pushed to GitHub (`origin`): `main` and `staging`. No workflows exist yet, so pushing deploys nothing.
 

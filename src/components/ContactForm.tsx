@@ -37,8 +37,11 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
   const [mapBroken, setMapBroken] = useState(false);
   const [postcodeUnknown, setPostcodeUnknown] = useState(false);
   const [locating, setLocating] = useState<Locating>('idle');
+  // What "Use my location" or a moved pin filled in, waiting for the visitor to say "yes, that's right".
+  const [detected, setDetected] = useState<{ street: string; postcode: string } | null>(null);
   const lookedUp = useRef('');
   const mapBox = useRef<HTMLDivElement>(null);
+  const addressInput = useRef<HTMLInputElement>(null);
 
   if (state.status === 'sent') {
     return (
@@ -87,8 +90,10 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
       async (pos) => {
         const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         if (!isPlausibleUkPoint(here.lat, here.lng)) return setLocating('failed');
+        // Place the pin only: the visitor still has to tap or drag it to confirm. A phone's location is
+        // close, not exact, and "confirmed" must mean they looked at the map.
         setPoint(here);
-        setConfirmed(true);
+        setConfirmed(false);
         setLocating('idle');
         await fillFromPoint(here);
       },
@@ -97,14 +102,21 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
     );
   }
 
-  /** Fill the postcode (and an empty address) from a point: postcodes.io, then Mapbox. */
+  /**
+   * Fill the postcode (and an empty address) from a point: postcodes.io, then Mapbox. Whatever was
+   * filled is then put to the visitor to confirm ("We found ... is that right?"), because a
+   * location is only close, not exact.
+   */
   async function fillFromPoint(p: LatLng) {
+    let foundPostcode = '';
+    let foundStreet = '';
     try {
       const res = await fetch(`https://api.postcodes.io/postcodes?lon=${p.lng}&lat=${p.lat}&limit=1&radius=300`);
       if (res.ok) {
         const { result } = (await res.json()) as { result?: { postcode: string }[] | null };
         const found = result?.[0]?.postcode;
         if (found) {
+          foundPostcode = found;
           lookedUp.current = found.replace(/\s+/g, '');
           setPostcode(found);
           setPostcodeUnknown(false);
@@ -113,17 +125,25 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
     } catch {
       // Ignore: the visitor can type it.
     }
-    if (!mapboxToken || address.trim()) return;
-    try {
-      const res = await fetch(
-        `https://api.mapbox.com/search/geocode/v6/reverse?longitude=${p.lng}&latitude=${p.lat}&types=address&limit=1&access_token=${encodeURIComponent(mapboxToken)}`,
-      );
-      if (!res.ok) return;
-      const json = (await res.json()) as { features?: { properties?: { name?: string } }[] };
-      const street = json.features?.[0]?.properties?.name;
-      if (street) setAddress(street);
-    } catch {
-      // Ignore.
+    if (mapboxToken && !address.trim()) {
+      try {
+        const res = await fetch(
+          `https://api.mapbox.com/search/geocode/v6/reverse?longitude=${p.lng}&latitude=${p.lat}&types=address&limit=1&access_token=${encodeURIComponent(mapboxToken)}`,
+        );
+        if (res.ok) {
+          const json = (await res.json()) as { features?: { properties?: { name?: string } }[] };
+          const street = json.features?.[0]?.properties?.name;
+          if (street) {
+            foundStreet = street;
+            setAddress(street);
+          }
+        }
+      } catch {
+        // Ignore.
+      }
+    }
+    if (foundPostcode || foundStreet) {
+      setDetected({ street: foundStreet || address.trim(), postcode: foundPostcode || postcode.trim() });
     }
   }
 
@@ -132,6 +152,11 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
     setAttempted(true);
     const invalid = phoneBad || emailBad || postcodeBad || postcodeUnknown || noContact;
     if (invalid) return e.preventDefault();
+    if (detected) {
+      // They have not said whether the address we found is right yet.
+      e.preventDefault();
+      return;
+    }
     if (needsPin) {
       e.preventDefault();
       mapBox.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -172,10 +197,55 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
           maxLength={300}
           autoComplete="street-address"
           className={field}
+          ref={addressInput}
           value={address}
-          onChange={(e) => setAddress(e.target.value)}
+          onChange={(e) => {
+            setAddress(e.target.value);
+            setDetected(null); // they are editing it themselves: that counts as checking
+          }}
         />
       </label>
+      {detected && (
+        <div role="status" className={`flex flex-col gap-2 rounded-lg p-3 text-sm ring-1 ${attempted ? 'bg-red-50 ring-red-600' : 'bg-brand/10 ring-brand/40'}`}>
+          <Ed id="contact.check.title" as="p" className="font-semibold text-brand-deep">
+            We found this address. Is it right?
+          </Ed>
+          <p className="text-base font-bold text-ink">
+            {detected.street ? `${detected.street}, ` : ''}
+            {detected.postcode}
+          </p>
+          {!detected.street && (
+            <Ed id="contact.check.nostreet" as="p" className="text-ink/80">
+              We only found the postcode. Please type your house number and street above.
+            </Ed>
+          )}
+          {attempted && (
+            <Ed id="contact.check.pending" as="p" className="font-semibold text-red-700">
+              Please say if this is right, then send.
+            </Ed>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => (detected.street ? setDetected(null) : addressInput.current?.focus())}
+              className="flex-1 rounded-lg bg-brand-deep px-3 py-2 font-bold text-white"
+            >
+              <Ed id="contact.check.yes">Yes, that’s right</Ed>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setDetected(null);
+                addressInput.current?.focus();
+                addressInput.current?.select();
+              }}
+              className="flex-1 rounded-lg px-3 py-2 font-bold text-brand-deep ring-2 ring-brand-deep"
+            >
+              <Ed id="contact.check.no">No, I’ll fix it</Ed>
+            </button>
+          </div>
+        </div>
+      )}
 
       <label className="flex flex-col gap-1 text-sm font-semibold">
         <Ed id="contact.form.postcode">Postcode</Ed>
@@ -191,6 +261,7 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
           onChange={(e) => {
             setPostcode(e.target.value);
             setPostcodeUnknown(false);
+            setDetected(null);
             void lookUpPostcode(e.target.value);
           }}
           onBlur={(e) => {
@@ -247,7 +318,7 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
             inputMode="tel"
             maxLength={30}
             autoComplete="tel"
-            placeholder="07700 900123"
+            placeholder="07xxx xxxxxx"
             aria-invalid={showPhoneBad || undefined}
             className={`${field} ${showPhoneBad || showNoContact ? fieldBad : ''}`}
             value={phone}
@@ -257,7 +328,7 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
         </label>
         {showPhoneBad && (
           <Ed id="contact.form.phone.error" as="p" className={errorText}>
-            That doesn’t look like a UK phone number. Try 07700 900123.
+            That doesn’t look like a UK phone number. Try a number like 07xxx xxxxxx.
           </Ed>
         )}
       </div>
