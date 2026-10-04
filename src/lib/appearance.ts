@@ -47,7 +47,7 @@ export async function getAppearance(db: Db = getDb()): Promise<Appearance> {
 
 export async function listLogos(db: Db = getDb()): Promise<{ logos: StoredLogo[]; activeHash: string | null }> {
   const rows = await db.query<{ hash: string; width: number; height: number; label: string; created_at: string }>(
-    'SELECT hash, width, height, label, created_at FROM site_images ORDER BY created_at DESC',
+    "SELECT hash, width, height, label, created_at FROM site_images WHERE kind = 'logo' ORDER BY created_at DESC",
   );
   const active = await db.query<{ value: string }>("SELECT value FROM site_settings WHERE key = 'logo'");
   return {

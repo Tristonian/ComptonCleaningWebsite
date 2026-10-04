@@ -203,6 +203,11 @@ export function AppearanceManager({
             Reset
           </button>
         </div>
+        {(normaliseHex(colour) ?? colour) !== background && (
+          <button type="button" onClick={() => setColour(background)} className="mt-2 w-full rounded-xl px-4 py-3 text-sm font-bold text-ink ring-1 ring-ink/20">
+            Cancel (keep the current colour)
+          </button>
+        )}
       </section>
 
       {picked && <LogoCropper file={picked} background={background} onCancel={() => setPicked(null)} onDone={upload} />}

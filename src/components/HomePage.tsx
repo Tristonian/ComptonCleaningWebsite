@@ -1,6 +1,8 @@
 import { Ed } from '@/components/Ed';
 import { ContactForm } from '@/components/ContactForm';
 import { getEnv } from '@/lib/env';
+import { BlockZone } from '@/components/BlockZone';
+import { listBlocks } from '@/lib/blocks';
 import { AppearanceEditor } from '@/components/AppearanceEditor';
 import { HeroHeader } from '@/components/HeroHeader';
 import { HeroMenu, StickyBar } from '@/components/SiteNav';
@@ -26,7 +28,7 @@ const h2 = 'mb-4 text-3xl font-black uppercase italic tracking-tight text-brand-
  */
 export async function HomePage() {
   const mapboxToken = getEnv('MAPBOX_TOKEN');
-  const appearance = await getAppearance();
+  const [appearance, blocks] = await Promise.all([getAppearance(), listBlocks()]);
   return (
     <main>
       {/* Hero: the business card. CCS, the squeegee, the web address, the phone number. */}
@@ -72,6 +74,8 @@ export async function HomePage() {
         </Ed>
       </section>
 
+      <BlockZone zone="intro" blocks={blocks.filter((b) => b.zone === "intro")} />
+
       <section id="services" className={section}>
         <Ed id="services.title" as="h2" className={h2}>
           Services
@@ -104,6 +108,8 @@ export async function HomePage() {
         </div>
       </section>
 
+      <BlockZone zone="services" blocks={blocks.filter((b) => b.zone === "services")} />
+
       <section id="prices" className={`${section} text-center`}>
         <Ed id="prices.title" as="h2" className={h2}>
           Prices
@@ -127,6 +133,8 @@ export async function HomePage() {
           <Ed id="prices.cta">For the best price, contact us</Ed>
         </a>
       </section>
+
+      <BlockZone zone="prices" blocks={blocks.filter((b) => b.zone === "prices")} />
 
       <section id="contact" className={section}>
         <Ed id="contact.title" as="h2" className={h2}>
@@ -174,6 +182,8 @@ export async function HomePage() {
           <Ed id="reviews.cta">Leave us a Google review</Ed>
         </a>
       </section>
+
+      <BlockZone zone="reviews" blocks={blocks.filter((b) => b.zone === "reviews")} />
 
       <footer className="bg-ink px-4 py-6 text-center text-sm text-white/70">
         <Ed id="footer.copy" as="p">

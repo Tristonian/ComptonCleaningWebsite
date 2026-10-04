@@ -32,6 +32,13 @@ export function AppearanceEditor() {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
   // Leaving edit mode closes the sheet.
   useEffect(() => {
     if (!editing) setOpen(false);
@@ -50,12 +57,15 @@ export function AppearanceEditor() {
       </button>
       {open &&
         createPortal(
-          <div className="fixed inset-0 z-[75] overflow-y-auto bg-ink/60 p-4 print:hidden" role="dialog" aria-modal="true" aria-label="Logo and colour">
+          <div
+            className="fixed inset-0 z-[75] overflow-y-auto bg-ink/60 p-4 print:hidden"
+            onClick={(e) => e.target === e.currentTarget && setOpen(false)}
+            role="dialog" aria-modal="true" aria-label="Logo and colour">
             <div className="mx-auto max-w-xl rounded-2xl bg-paper p-4 shadow-2xl">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-xl font-black text-brand-deep">Logo and colour</h2>
                 <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-bold ring-1 ring-ink/20">
-                  Done
+                  ✕ Close
                 </button>
               </div>
               {failed && <p className="text-sm font-semibold text-red-700">{failed}</p>}

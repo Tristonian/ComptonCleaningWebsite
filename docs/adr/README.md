@@ -14,3 +14,4 @@ file; status is `Accepted` unless superseded.
 | [0005](0005-data-neon-postgres.md) | Data: Neon Postgres replaces D1 (R2 stays) | Accepted |
 
 To add one: copy an existing file, take the next number, add a row above.
+| [0006](0006-page-blocks-photos-and-text.md) | Page blocks: photos and text Sam can place and arrange | Accepted |

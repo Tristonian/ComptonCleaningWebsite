@@ -198,9 +198,10 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
       pick/delete logos; hero colour picker with contrast warning). Tables `site_images`, `site_settings`
       (migration 0006: run `npm run db:migrate` on each branch). Hero now collapses on scroll (`HeroHeader`):
       logo to 10%, thin pinned bar, nav sticks at `top-11`. The website line under the logo was removed.
-- [ ] **Free-placement images + movable text** (Tristan 2026-10-04): Sam adds photos (guttering, windows,
-      pressure washing...) wherever he wants, several at once, and moves blocks of text/images around, no fixed
-      slots. Needs a block model (ordered blocks per section) and a design decision against "not a CMS": see chat.
+- [x] **Free-placement photos + text blocks** (built 2026-10-04, UNVERIFIED on a phone; ADR 0006, migration 0007):
+      pencil on -> each zone (under intro/Services/Prices/Reviews) shows Add photos (several at once, or drop files),
+      Add text, drag to arrange, up/down buttons, edit caption/text per language, delete. Not done: two-up photo
+      layouts, reordering the built-in sections, more zones, touch drag.
 - [x] **Enquiry inbox in /admin**: built (see above). Still to add: mark-as-spam/archive, search, a customers list page,
       unread badge on the nav, reply templates editable in the admin.
 - [ ] Production: `db:migrate -- --branch production`, secrets (`DATABASE_URL`, `RESEND_API`, `ENQUIRY_TO`,
