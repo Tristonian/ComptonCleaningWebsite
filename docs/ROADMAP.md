@@ -25,6 +25,9 @@ fluent speaker) ships with Phase 2 so the pencil edits either language from day 
 database backups (Neon history retention + scheduled export), security headers/CSP, rate limiting on auth routes, accessibility
 pass, DNS cutover, Google Business Profile and Search Console. Exit: live on the real domain.
 
+## Phase 4 — Work tracker for Sam (ADR 0008; started 2026-10-04)
+Sam moves off Squeegee onto this site's /admin: customers (import, add on the doorstep with a location, filters, call/text/WhatsApp), rounds, a Work screen (due this week, DONE/MISSED with extras and payment, debts, payments), visit history, a colour-keyed map. ⚠️ Built and unit-tested, on staging only; nobody has used it on a phone. Next: weather on the admin home, photos on a visit, Templates (on/off + editable texts and emails; SMSWorks later), payment-method and round-ordering UIs. Later: invoices, cancellations and estimated earnings, a job timer. The route planner (WindowsWayfinder) stays a separate product that may come later.
+
 ## SEO: do it properly (Tristan 2026-10-04: "SEO the heck out of this")
 A first-class goal, not a Phase 1 footnote. Local search is how Sam gets customers. To do, roughly in order:
 - **Basics that ship with go-live:** unique `<title>` and meta description per page (and per language), canonical URLs,

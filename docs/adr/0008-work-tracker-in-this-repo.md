@@ -38,6 +38,7 @@
   the server and nothing needs SMSWorks yet. The "I'm coming tomorrow" text pre-fills the phone's own
   messaging app. Defaults live in `src/lib/message-templates.ts`; the Templates screen will make them
   switchable and editable (overrides-only). SMSWorks is wired in later behind the same templates.
+- **Map pins** are colour-keyed by one status per customer, in priority order so the thing to act on wins: owes money (red), overdue (orange), due this week (yellow), up to date (green), no schedule (grey). Demo customers (`demo-` refs) exist only on staging via `npm run db:seed-demo`, which refuses production.
 - **Weather** on the admin home uses Open-Meteo (free, no key), built after the tracker screens.
 
 ## Consequences

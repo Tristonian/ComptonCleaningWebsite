@@ -1,227 +1,114 @@
 # Next steps — start-here backlog
 
-The in-chat todo list doesn't survive a new session, so the live backlog lives here. Read
-`ROADMAP.md` for direction, then pick up from this list. Keep it current.
+The in-chat todo list doesn't survive a new session, so the live backlog lives here. This file describes the
+world **as it is now**; it is rewritten, not appended, at each `/wrapup` (git history has the old ones).
+Read `CLAUDE.md`, then this, then `ROADMAP.md`. Start a fresh session with `/nextsteps`.
 
-_Last updated: **2026-10-04 (end of session 2)**. Staging is LIVE at https://staging.comptoncleaning.co.uk. Production is not deployed and the real domain still has no website DNS records. `main` and `staging` are pushed to GitHub (`origin`); no CI/deploy workflow exists yet, so a push deploys nothing._
+_Last revised: **2026-10-04, end of session 4** (rich text editor, work tracker slices 1-2, map)._
 
-## State of play
+## State, verified at the end of session 4
 
-| | |
+| Check | Result |
 |---|---|
-| Staging | https://staging.comptoncleaning.co.uk (custom domain via `routes`; workers.dev is OFF) |
-| Production | Not deployed. `comptoncleaning.co.uk` has 0 DNS records. |
-| Cloudflare | Sam's account `f63f844d70738925fc7fb251893122cc`, Tristan is a member. Always pin `CLOUDFLARE_ACCOUNT_ID`. |
-| Data | **Neon Postgres** (ADR 0005, Sam's Neon account): branches `production` / `staging` / `dev`; `db/migrations/0001_init.sql` applied to `staging` + `dev`, NOT yet to `production`. R2 `compton-cleaning-images(-staging)`. D1 was deleted 2026-10-04. |
-| Auth | Google OAuth (ADR 0003). Consent screen in **Testing**; test users: Sam + Tristan. |
-| Local | `npm run dev` -> http://localhost:3000, against the Neon `dev` branch (`DATABASE_URL` in `.env.local`; migrate with `npm run db:migrate`). 66 tests (PGlite = real Postgres), `tsc` and `next build` clean. |
+| `npm run typecheck` | clean |
+| `npm test` | **198 / 198** (26 files). The database tests boot an in-process Postgres each and take ~2 minutes in total; hook timeout is 60 s (`vitest.config.mts`). |
+| `npx next build` | clean |
+| Git | `main` = `staging` = `dbab6c4` plus the wrap-up commits, all pushed to `origin` (the repo is **public**). A push deploys nothing: there is no deploy workflow. |
+| Staging | https://staging.comptoncleaning.co.uk, Worker version `7654cb14` (everything below). Neon `staging` branch migrated through **0010**, has 16 demo customers + 3 "Demo" rounds. |
+| Production | https://comptoncleaning.co.uk (apex 200, `www` → apex 301), Worker version `b6aa3d91`: the site + the rich text editor, **not** the work tracker. Neon `production` migrated through **0009**; **0010 NOT applied**, so do not deploy the tracker there before migrating. |
+| Neon `dev` branch | only through 0009 (run `npm run db:migrate` for local dev). |
+| Local DNS | this machine cached "no such domain" for the apex earlier; `curl --doh-url https://cloudflare-dns.com/dns-query https://comptoncleaning.co.uk/` proves it is up. |
 
-## ⚠️ Not verified (be honest about these)
+## ⚠️ Needs a human (probed, not assumed)
 
-- ✅ **Google login confirmed working on staging** (Tristan, end of session 1, after saving the
-  staging redirect URI in the Google client). Still unchecked: Sam's own login, and login on a phone.
-- **The pencil has never been used in a browser**: tap text, type, Save, Revert, reload.
-- **Nothing has been seen on a real phone.**
-- **Welsh is machine-drafted** (`src/content/cy.ts`). A fluent speaker must review it before launch.
+- ✅ `npx wrangler whoami`: logged in (OAuth) as tristan.d.pointer@googlemail.com, with access to Sam's account `f63f844d…`. ✅ `gh auth status`: Tristonian.
+- ⚠️ **Production has NO Worker secrets** (`wrangler secret list` returns nothing). The public page renders defaults, **the contact form cannot store enquiries, and admin login does not work on production**, so the rich text editor and the tracker are unusable there. Fix: `bash scripts/set-prod-secrets.sh` (the assistant's secret writes were blocked by the permission check, so Tristan runs it), then verify each is non-empty through the live Worker (CLAUDE.md), then `docs/GO-LIVE.md` step 5. Also: Google OAuth redirect URI `https://comptoncleaning.co.uk/api/auth/google/callback` + Sam as test user; Sam reads `/privacy`.
+- **Production must be migrated before the tracker is deployed there:** `npm run db:migrate -- --branch production` (applies 0010), only when Tristan says so.
+- **Real-device checks:** Tristan reported sessions 2-3 "all good" on a phone (2026-10-04). **Nothing from session 4 has been seen on any device**, and nobody has used the editor, the work screen, the map or the demo data in a browser.
+- Sam's Gmail "send as" `hello@` with his own Resend key: done (Tristan). Sam's own Google login: still untested.
+- Sam's `Customers.csv` (the Squeegee export) is in Tristan's Downloads, never in the repo. It is 20 people with names, addresses and phones only (no price, frequency, postcode or last clean). Not yet imported anywhere real.
+- Welsh is machine-drafted (`src/content/cy.ts`); a fluent speaker must review before launch.
+- Business facts still needed from Sam: see the bottom of this file.
+
+## ❓ Untested, honestly (all session 4, all built and unit-tested only)
+
+- **The rich text editor in a browser**: toolbar, Enter twice then Save then reload shows the gap, size/colour/alignment, headings, links, Welsh, text blocks, service descriptions. The editor is lazy-loaded; the public page is ~126 kB first load.
+- **Work tracker on a phone**: Add customer with 📍 Grab location, Squeegee import (preview then import), customer list filters and call/text/WhatsApp/"coming tomorrow" links, edit and delete a customer, Work screen (Due this week by round, DONE panel, one-tap MISSED, Debts, Payments), visit history edit/delete, the map (pins, key filter, popups, Grab location on an imported customer to give it a pin), the bottom tab bar, and the button grids evened up at the very end (the "wonky buttons" fix: not seen by either of us after the change).
+- **Mapbox token on staging for the admin map**: it is URL-restricted; the contact form's map works on staging so the staging URL is allowed, but the admin map has not loaded once.
+- `sms:` links with a prefilled body behave differently on iOS and Android (`?&body=` is used for both); check on both.
+
+## Built, do not redo
+
+**Session 4 (2026-10-04), all committed; staging has it all, production has only the editor:**
+- **Rich text** (ADR 0007): `<Ed rich>` nodes (intro, services, price factors, contact intro), text blocks and custom service descriptions use a tiptap editor adapted from HairByRachel, the full toolbar (size, colour, alignment, B/I/U, H2/H3, quote, divider, lists, links) minus inline images. Stored as sanitised HTML (`src/lib/rich.ts`, `rich-sanitize.ts`, sanitised server-side on every save, even if the client lies about `rich`); blank lines are kept (empty paragraphs render a line high). Old plain text is converted when read; nothing was migrated. Lazy-loaded via `next/dynamic`.
+- **Work tracker** (ADR 0008, migration 0010): customers with price/frequency/preferred payment/last clean/Squeegee ref; **rounds** (a customer can be in several); `jobs` (done/missed, date never in the future, price, payment method, paid), `job_extras`, `job_photos` (table only, no UI yet), `payment_methods` (transfer/cash/card; Sam can add, no UI yet). **Due and owing are computed, never stored.** Debt = a done visit not marked paid. Screens: `/admin/customers` (search, Due/Owing/round filters, call/text/WhatsApp, "coming tomorrow" text), `/new` (Grab location), `/[id]` (edit, delete with typed confirmation, visit history with edit/delete/mark paid, log a visit), `/import`, `/map`, `/admin/work` (Due this week by round, Also in this round, Also due this week, Debts, Payments). Squeegee CSV import (`src/lib/customers-csv.ts`) skips references already imported, so re-imports never overwrite edits.
+- **Map**: colour-keyed pins (red owes, orange overdue, yellow due this week, green up to date, grey no schedule, priority in that order, `src/lib/pin-status.ts`), key doubles as a filter, round chips, popups built from DOM nodes (never HTML strings).
+- **Bottom tab bar** on every signed-in admin page (`AdminTabs`, copied from Rachel's pattern); padding via `body:has(.admin-tabs)` in `globals.css`.
+- **Demo data**: `npm run db:seed-demo -- --branch staging` adds 16 invented Bristol customers (`demo-` refs, "Demo:" names, fake 07700 900xxx numbers, "Demo" rounds); `--remove` deletes them; it refuses production.
+- Greetings tidy ALL-CAPS/lower-case first names (`tidyName`, "Hi TRISTAN" → "Hi Tristan"). Nothing in the code upper-cases names; it printed what was typed.
+- Commands `/wrapup` and `/nextsteps` (`.claude/commands/`, adapted from VideoGameDiaries and ShoppingList).
+
+**Sessions 1-3** (see ROADMAP/ADRs; do not redo): hosting on Cloudflare Workers (OpenNext), Neon Postgres (ADR 0005) + R2, Google OAuth + allow-list (ADR 0003), the pencil and `/cy` (ADR 0004), the one-page public site, contact form (honeypot, rate limit, UK phone/email/postcode checks that fail open, confirmed Mapbox pin, Resend email from `enquiry@`), enquiry inbox, logo upload/cropper + colour picker, collapsing hero, photo/GIF/text blocks (ADR 0006), own services, hide/show sections, editable form drop-downs, go-live prep (apex + www routes, `/privacy`), favicon from the CCS mark.
+
+## Next, in order
+
+1. **Weather on the admin home** (Tristan's pick for next): Open-Meteo (free, no key). Server-side fetch only, never from the browser; cache per area per day (Workers cache or a tiny table). Location: Sam's base (Lyde Green, BS16, about 51.50, -2.50) for the home tile; per-round and per-day forecasts can use the customers' pins. Show the week: rain chance, wind and frost, with a plain "good for windows / ladder warning" line (rain matters for windows, wind and ice for ladders and gutters). Must fail soft (a weather outage never breaks the admin home). Unit-test the parsing and the thresholds; handle London time.
+2. **Photos on a visit** (tables exist): reuse the block-photo upload path (resize in the browser, R2 `photo/<sha256>`, `/img/[hash]`); delete the R2 object when no row references it (also on customer delete: collect hashes first, then remove after the transaction).
+3. **Templates screen** (like Rachel's `emails` page): switch each text/email on or off and edit its content (rich editor for emails, plain for SMS), overrides-only; "coming tomorrow" (`src/lib/message-templates.ts`) and the reply templates (`src/lib/reply-templates.ts`) move in. SMSWorks wired in later behind the same templates. Add **Templates** to the tab bar then.
+4. Payment methods UI (Sam adds methods as needed), drag-to-order customers within a round (position column exists), customer "last cleaned" correction for imported customers, a way to set price/frequency/round for many imported customers quickly.
+5. Invoices (later; build on `jobs` + `job_extras`), cancellations/estimated earnings, the work timer.
+6. Referrals/promos, achievements, prices house animation, privacy notes on location tracking: see "Ideas" below.
+
+## Ideas from Tristan (not started)
+
+- **Prices with a house animation:** small/medium/large house; the price counts up as you scroll, windows go dull to sparkly. `prefers-reduced-motion` shows the final state; CSS/SVG only; prices from `business.ts`/`<Ed>`; no sound.
+- **Location ideas, read the privacy notes first:** "track Sam all day" for him only needs an installed app/PWA with opt-in or an "I'm here" tap (a website cannot track in the background); only Sam sees it, short retention, off switch; UK GDPR if anyone else is ever tracked. **Do not show real location history on the public site** (it says when he is away and points at customers' homes); at most a coarse, delayed, opt-in line such as "This week: BS16, BS5, Chepstow" from completed jobs.
+- **Referrals and review promos (like HairByRachel):** "referred by" asks the referrer's full name, both get a discount once the new customer pays (guard self-referral and name typos; Sam confirms each in the admin); a Google review earns a small single-use promo code (Google has no API to verify a review, so honour-based or Sam ticks "review seen"). Read Rachel's referral/promo code and reuse the shape; the contact form's "Where did you hear about us" already records a `recommendation` source.
+- **Achievements** like HairByRachel (`src/lib/achievements*.ts` there).
+- **Cancellations** (record how often, estimate how many of a round might cancel, feed estimated earnings) and a **start/done timer** per job to see how long jobs really take (feeds pricing).
+- Crossover with HairByRachel's `/admin` (appointments, templates, reminders): house style = HairByRachel, read it first, do not copy GPL code.
+
+## Traps this codebase has walked into
+
+- **Never overwrite a customer's data on a re-import:** `importCustomers` skips known `squeegee_ref`s. Keep it that way.
+- **Audit rows never hold a name, phone or address** (customer delete must really delete). Log ids only.
+- **Dates come back differently from Neon and PGlite** (string vs `Date`): cast `date` to text in SQL (`to_char(..., 'YYYY-MM-DD')`), `::text` for bigint ids, `::int` for sums. Bigint ids are strings.
+- **A `<p>` cannot nest in a `<p>`:** rich nodes always render in a `div` whatever `as` says (hydration errors otherwise).
+- **An empty paragraph has no height:** render `<p></p>` as `<p><br></p>`, give it back empty to the editor. Don't "simplify" this away.
+- **Heavy editor libraries must stay out of the public bundle:** `RichTextEditor` is a `next/dynamic` wrapper over `RichTextEditorImpl`. Importing the Impl directly puts tiptap (~130 kB) on every visitor's first load.
+- **tiptap v3's StarterKit already includes Link and Underline;** they are switched off in `configure` so ours aren't registered twice.
+- **Shell quoting loses to nested heredocs on Windows Git Bash:** write files with the editor tools, not `node -e` with escapes (several silent no-ops this session). `/tmp` in bash and node are different folders on Windows.
+- **Database tests are slow, not broken:** each test boots PGlite and runs every migration; under parallel load that exceeded the 10 s default hook timeout (43 false failures). It is 60 s now; if migrations keep growing, share one DB per file.
+- **Deploy by hand:** `CLOUDFLARE_ACCOUNT_ID=f63f844d70738925fc7fb251893122cc npm run deploy:staging` / `npm run deploy` (the latter prints a "multiple environments" warning and deploys the top-level production Worker, which is what is meant). Always set the account id (Sam's account, not Tristan's).
+- **Production secrets can look present when empty** and are currently absent altogether: verify non-empty through the live Worker after setting.
+- **`sanitize-html` styles:** only `font-size` (`NNpx`), `color` (hex) and `text-align` are allowed, with tight patterns. Widening them is a security decision.
+- **Edit the wrong environment by accident:** `db:migrate`/`db:seed-demo` take `--branch`; the seed refuses `production`; migrate does not, so type the branch carefully.
 
 ## Do first next session
 
-- [x] Google redirect URI saved; Tristan signed in on staging. [ ] Sam to sign in once (expect the
-      "hasn't verified this app" screen: Advanced -> Continue).
-- [ ] Use the pencil on staging: change the heading in English and in Welsh, Save, reload, Revert.
-- [ ] Push `main` + `staging` to GitHub (repo is public: `.env.local` ignored and verified, re-check).
-- [ ] CI (`typecheck`, `test`, `audit`) and `deploy.yml`; needs a Cloudflare API token with Workers,
-      R2 and **DNS** edit (wrangler's own login token cannot edit DNS) in GitHub secrets.
-- [ ] Add Tristan as Owner on the Google Cloud project (IAM).
+1. `/nextsteps` will re-verify the state. Then ask Tristan whether production secrets are set (or set them with him), because the live site's form is broken without them.
+2. Have Tristan open staging `/admin` on a phone and report on the editor, Work screen, map and demo data (list under "Untested").
+3. Weather (item 1 above).
 
-## Built 2026-10-04 (session 2): deployed to staging, NOT yet seen on a real phone
+## Prompt for the next chat
 
-- One-page site from Sam's sketch: hero (CCS card style, hamburger), About (no heading), Services,
-  Prices, Contact, Reviews (with Sam's Google review link, `REVIEW_URL` in `src/lib/business.ts`);
-  sticky anchor bar. All text is `<Ed>` with draft Welsh. Hero is a CSS approximation of the card.
-- Contact form (name, address, postcode, contact, optional notes): stored in Postgres `enquiries` first
-  (`src/lib/enquiries-store.ts`), then emailed through **Resend** (`src/lib/mail.ts`,
-  plain fetch) from `enquiry@comptoncleaning.co.uk` to `ENQUIRY_TO` (Sam only on staging).
-  **Verified end to end on staging** (enquiry arrived in an inbox). Abuse controls: honeypot, field
-  limits, rate limit 3/hour per sender (salted IP hash) and 40/day site-wide (`RATE_LIMIT` in
-  `src/lib/enquiry.ts`). The rate limit and the notes field were deployed but **not yet exercised**.
-- Sending as / receiving at `hello@` works (see `INFRASTRUCTURE.md` section 3).
-- Enquiries are only in the database and email: there is **no admin view of them yet**.
-  Query: `neon psql staging` (or the Neon console SQL editor) then `SELECT * FROM enquiries ORDER BY id DESC;`.
+```text
+Work in C:\Users\Trist\Documents\GitHub\ComptonCleaningWebsite (Next.js 15 + Tailwind on Cloudflare Workers via OpenNext, Neon Postgres, R2; Sam's window-cleaning site + work tracker). Start every message with "Tristan, ". Run /nextsteps (or read CLAUDE.md, docs/NEXT_STEPS.md, docs/ROADMAP.md, ADRs 0007 and 0008 in that order).
 
-### Moved D1 -> Neon Postgres (session 2, ADR 0005): verified on staging, not yet in production
-- Code: `src/lib/db.ts` (`Db` = `query` + `transaction`, Neon HTTP driver), store/session/enquiries
-  rewritten for Postgres, tests on PGlite. Old D1 migrations and the SQLite fake were deleted.
-- Staging Worker reads from the Neon `staging` branch (the migrated £35 price override shows on the page);
-  real-driver transactions, rollback and `RETURNING` were checked on the `dev` branch.
-- NOT exercised on the wire after the move: Google login (session create/resolve), a pencil save, and a
-  contact-form submit on staging. Do these first (Sam's inbox gets the email: warn him, or set
-  `ENQUIRY_TO` to Tristan for the test).
-- Sam's future `/admin` (calendar, slotting people in, enquiries, notes) is the reason for Postgres. Keep
-  the round-planner/route work in WindowsWayfinder (CLAUDE.md); decide the overlap when starting it.
+STATE (2026-10-04, verify first): typecheck clean; 198/198 tests (slow, ~2 min); build clean. main = staging pushed. Staging has everything (Worker 7654cb14, Neon staging migrated through 0010, 16 "Demo:" customers). Production has the site + rich text editor only (Worker b6aa3d91, Neon production through 0009, NO Worker secrets, so contact form and admin login do not work there). Repo is public.
 
-### Location + map pin (session 2): built, tested locally, deployed to staging
-- Contact form: **"Use my location"** (browser geolocation -> postcodes.io reverse lookup -> fills the
-  postcode, and the street via Mapbox reverse geocoding), and a **draggable Mapbox pin** that appears once
-  there is a location (typed postcode -> postcodes.io lookup, or detected). Tap the map or drag to confirm;
-  the address/postcode follow the pin. Optional everywhere: the typed form still works if location is
-  blocked, the lookup fails or WebGL/the token fails (`PinMap` -> `onFail`).
-- Saved: `enquiries.lat/lng` (migration `0002_enquiry_location.sql`, applied to dev + staging). The
-  enquiry email's Google Maps link points at the pin ("Pin confirmed by the customer") or falls back to an
-  address search. Implausible coordinates (outside the UK/Ireland box) are dropped (`src/lib/geo.ts`).
-- Mapbox token: `MAPBOX_TOKEN` (public `pk.`, read at request time in `HomePage`, passed to the form;
-  Worker secret on staging; production still to set). **URL-restricted in the Mapbox dashboard (no
-  wildcards): verified 403 for other referrers and for no referrer.** Old token was rotated.
-  mapbox-gl is loaded on demand only when a pin first shows (`next/dynamic`, not on the first paint).
-- `Permissions-Policy` now `geolocation=(self)` (was `()`).
-- Verified locally on the dev branch: postcode -> map + pin, tapping the map moved the pin and filled
-  "98 Park Road", and a full submit stored lat/lng (test row removed). **NOT verified: the "Use my
-  location" button itself (needs a real browser permission prompt: try it on a phone), the map on a real
-  phone, drag (vs tap) on a touchscreen, and the pin on staging.**
-- Privacy: Mapbox and postcodes.io are called from the visitor's browser; the privacy policy (needed
-  before the Google consent screen is published) must say so. Mapbox's free allowance is ~50k map loads
-  and 100k geocoding requests a month (check current pricing); set a usage alert in the Mapbox account.
+TASKS, in order:
+1. Weather on the admin home, Open-Meteo (free, no key), server-side only, cached per area/day, fail soft. Home tile for Sam's base (Lyde Green ~51.50,-2.50) with the week: rain chance, wind, frost, and a plain "good for windows / ladder warning" line; then per-round/day using customer pins. Unit-test parsing and thresholds, use Europe/London dates.
+2. Photos on a visit (job_photos table exists): browser resize, R2 photo/<sha256>, /img/[hash]; remove the R2 object when nothing references it, including on customer delete.
+3. Templates screen like HairByRachel's: on/off + editable content per text/email (rich editor for email, plain for SMS), overrides-only; move "coming tomorrow" and the reply templates in; add a Templates tab. SMSWorks later.
+4. Payment methods UI, drag-to-order within a round, faster bulk setup of imported customers.
 
-### Form checks, enquiry email, logo (session 2, later)
-- **Phone and email are separate fields**, at least one required. Phone: UK numbers only, normalised to
-  `+447...` (`normalisePhone`, rejects pagers/personal numbers/fake repeats). Email: format check
-  (`normaliseEmail`) plus a **DNS check that the domain can receive mail** (Cloudflare DNS-over-HTTPS; a
-  non-existent domain like `gmial.con` is refused). Postcode: shape check plus a **postcodes.io existence
-  check**. All three give instant inline errors in the form and are re-checked on the server. The lookups
-  **fail open** (`src/lib/verify.ts`): a lookup service being down never turns a customer away.
-  DB: `enquiries.phone`, `.email` (migration 0003; `contact` is kept as a readable join), CHECK that one exists.
-- **The pin must be confirmed:** when a map is showing, Send is blocked until the visitor taps the map or
-  drags the pin (or uses "Use my location"); the form scrolls to the map and says why. Nothing is forced
-  when the map cannot show (no token, no WebGL, blocked) or no pin exists yet (unknown postcode).
-  The server cannot enforce this (it cannot know the map was available), so it is client-side by design.
-- **Enquiry email to Sam:** attached Mapbox static map (fetched server side with our Referer), big "Open in
-  Google Maps" and "Get directions" buttons, tap-to-call phone and mailto email, and an honest pin label
-  (confirmed / approximate postcode centre / none). Needs checking in a real inbox (Gmail + phone) and in
-  Outlook/Apple Mail.
-- **"Use my location" only places the pin**: the visitor must still tap/drag it ("Location confirmed" only
-  appears after they do). Whatever location or a moved pin filled in is shown in a small card, "We found
-  this address. Is it right?" (street + postcode, Yes / No I'll fix it); Send is blocked until they answer or
-  edit the fields. Phone placeholder is the generic `07xxx xxxxxx` (a real-looking example can read as a
-  real person's number). Tested in a browser frame at 375px with a real tap; NOT tested with a real phone's
-  geolocation prompt.
-- Logo is white-on-transparent (`public/ccs-logo.png`, original in `docs/assets/`): no soft edge.
-- Pushed to GitHub (`origin`): `main` and `staging`. No workflows exist yet, so pushing deploys nothing.
+CONSTRAINTS: production is never migrated or deployed without Tristan saying so in that session (apply 0010 to production first: npm run db:migrate -- --branch production). Staging deploy/migrate when he says so for that work. Always set CLOUDFLARE_ACCOUNT_ID=f63f844d70738925fc7fb251893122cc. Money is integer pence; times UTC shown Europe/London; due/owing are computed never stored; audit rows hold ids only, never personal data; the Squeegee CSV and any customer data never go in the repo; never name a competitor; no sound; mobile-first (test at phone width, flag anything not seen on a real phone); rich text only via RichText/toDisplayHtml and sanitised on save; keep RichTextEditor lazy. Write files with the editor tools, not shell escapes.
 
-### Enquiry inbox in /admin (session 2): built; tested locally against a real database, NOT on a real device
-- `/admin` is a dashboard: **Enquiries** (with an unread count), **See the site**, "Back to the website" bar on every
-  admin page. `/admin/enquiries` lists them (filter chips by status with counts, unread dots, newest first).
-  `/admin/enquiries/[id]` shows: Call / Text / WhatsApp / Email buttons, the job (service, where they heard of us,
-  their notes), address with the **confirmed pin on a map** plus Open in Maps and Directions, a status selector
-  (New / Contacted / Quoted / Booked / Lost), Sam's **private notes**, a **Reply** form (templates, sent as
-  `hello@`, replies land back in his inbox; each is logged on the enquiry), and **Add as a customer**.
-- Data: migration 0005 (`enquiries.status/admin_notes/read_at/customer_id`, `customers`, `enquiry_replies`, RLS on).
-  Logic in `src/lib/enquiries-admin.ts` (unit tested on PGlite, which now returns bigint as strings like Neon);
-  actions in `src/app/admin/enquiries/actions.ts` re-check `getAdmin()` every time.
-- Verified in a browser at 375px with a minted dev session: list, filters, detail, status change, notes, add as
-  customer (idempotent), phone-only enquiry (no reply form). **NOT verified: actually sending a reply** (it would
-  email a real address; the send path is the same Resend call as the enquiry email), a real Google login, a phone.
-- Reply templates are code (`src/lib/reply-templates.ts`): editing them in the admin is the "template emails" idea.
+CANNOT DO WITHOUT TRISTAN/SAM: production secrets (bash scripts/set-prod-secrets.sh), Google OAuth redirect + Sam as test user, real-phone checks, Welsh review, Sam's business facts, SMSWorks account.
 
-### Sam's tracker / planner: ideas from Tristan (not started; read before designing)
-Tristan's goal: get this working **for Sam first**. WindowsWayfinder has stalled; much of its idea set
-(rounds, planner, payments) now belongs here. ⚠️ CLAUDE.md and ADR 0005 still say "do not merge the two":
-that rule needs an explicit decision and an ADR (supersede it) before building, then update CLAUDE.md.
-- **Rounds and the week:** customers on rounds, "due this week" list, the round for the day.
-- **Check-out / done view:** tap a job done; money owed (debts) and payments taken.
-- **Work planner with a start/done timer** so Sam can see how long jobs really take (feeds pricing).
-- **Cancellations:** record how often customers cancel, to estimate how many of a round might cancel and
-  feed that into **estimated earnings** (expected vs booked).
-- **Prices with a house animation** (Tristan): small / medium / large house; as you scroll the price counts up and the
-  house animates, windows going from dull to sparkly. Respect `prefers-reduced-motion` (show the final state), keep
-  it light (CSS/SVG, no big library), prices from `business.ts` / `<Ed>` so Sam can edit them, no sound.
-- **Location ideas (Tristan) - read the privacy notes before building anything:**
-  - "Track Sam all day to show which location he is near" (for him, in the admin): a website cannot track in the
-    background reliably; it needs an installed app/PWA with Sam opting in, or he taps "I'm here". Only Sam sees it,
-    shown as the nearest customer/round, short retention, and a switch to turn it off. UK GDPR applies if anyone
-    other than Sam is ever tracked.
-  - "Where has Sam been this week on the front page": **do not show a real location history on the public site.**
-    It tells strangers when he is away and where, and can point at customers' homes. If wanted, show only a coarse,
-    delayed, opt-in line such as "This week: BS16, BS5, Chepstow" built from completed jobs (postcode districts),
-    never GPS points, never live, never a street.
-- **Weather forecast in the planner/admin** (Tristan, 2026-10-04): rain, wind and frost for the week and
-  per round/day, so Sam can move jobs (rain matters for windows, wind/ice for ladders and gutters).
-  Likely free, key-less source to evaluate first: Open-Meteo (needs lat/lng, which the confirmed pin
-  already gives us per customer); also consider the Met Office DataHub. Cache per area/day, call from the
-  server, never from the browser.
-- **Referrals and review promos (like HairByRachel):** (1) "Referred by" asks for the referrer's **full name**; when
-  the new customer books/pays, both get a discount (record who referred whom; guard against self-referral
-  and name typos: match on the existing customer, confirm in the admin before the discount applies). (2) A
-  customer who leaves a Google review gets a small **promo code** (the review link is `REVIEW_URL`; Google
-  gives no API to verify a review, so it is honour-based or Sam ticks "review seen" in the admin and the code
-  is sent as a template email). Needs: customers table, referral link, promo codes (single-use, expiry), and
-  Sam approving each one. Read HairByRachel's referral and promo code first and reuse the shape.
-  The contact form's "Where did you hear about us" drop-down already records a `recommendation` source:
-  a follow-up question "who recommended you?" can feed this later.
-- **Template emails:** send and edit templated emails (confirmations, reminders, "we are on our way",
-  review requests) from the admin. Reuse the Resend setup (`src/lib/mail.ts`, `hello@` for replies).
-- **Crossover with the HairByRachel /admin:** look at how Rachel's admin does appointments, templates and
-  reminders and reuse the patterns (house style = HairByRachel). Do that read first; do not copy GPL code.
-- Data fits Postgres (ADR 0005): customers, properties (with the confirmed lat/lng), rounds, jobs, payments,
-  cancellations, templates, all with RLS on and every route behind `getAdmin()`.
-
-### Added later in session 2 (all on staging)
-- Logo: the card artwork (`public/ccs-logo.png`) replaces the CSS wordmark; its edges are feathered
-  into the hero gradient (`.hero`, `.logo-feather` in `globals.css`). Low-res: ask Sam for the vector/original.
-- **Welsh switch bug fixed**: `LangSwitch` was a `next/link`; soft navigation kept the layout's old
-  language. It is now a plain `<a>` (full load). Do not turn it back into a `Link`.
-- Hamburger is a fixed bubble (follows the scroll); the pencil's Edit button moved to bottom-right.
-- Contact shortcuts: Call, Text (sms:), WhatsApp (`WHATSAPP_URL`, assumes the number is on WhatsApp:
-  confirm with Sam), Email (`mailto:hello@`).
-- Form: separate **postcode** (validated UK shape, stored normalised; migration 0004), notes, and a
-  Google Maps search link in the enquiry email (no API key).
-- **Tested at 375px (local dev frame) and via the form**: layout, bubble, no horizontal scroll; 3
-  enquiries accepted, the 4th rate-limited with the on-page message. Still not tested on a real phone.
-  Dev only: `next.config.mjs` omits `X-Frame-Options` in development so the site can be framed at
-  phone width; production still sends DENY (verified on staging).
-
-### Ideas from Tristan
-- [x] **Detect my location** and **map pin** (Mapbox, decided 2026-10-04): built, see "Location + map pin" above.
-  WindowsWayfinder still has no maps provider: reuse this Mapbox account/decision if it needs one.
-- [ ] **Achievements** like HairByRachel (`src/lib/achievements*.ts` there): later.
-- Database access control: RLS is on for every table (migration + `ensure_rls` trigger), the Neon Data
-  API and Neon Auth are OFF, and the browser never talks to the database. Keep it that way: only server
-  actions and admin routes (each re-checking `getAdmin()`) may read `enquiries`; never add a public read route.
-
-### Next (in order)
-- [ ] **Re-verify on staging after the Neon move and all the form changes** (nothing here has been done by a human
-      on a real device): Google login, a pencil save, a contact-form submit (Sam gets the email: warn him or set
-      `ENQUIRY_TO` to Tristan for the test), the email in Gmail on a phone, "Use my location" with a real
-      permission prompt, pinch zoom and wheel zoom on the map (the test browser froze on wheel events, so wheel
-      zoom is UNTESTED), the sent confirmation, the hamburger/sticky bar, the Welsh switch.
-- [x] **Logo upload + colour picker** (built 2026-10-04, UNVERIFIED in a browser/phone): `/admin/appearance`
-      (upload -> cropper adapted from HairByRachel -> PNG -> R2 `logo/<sha256>`, served by `/img/[hash]`;
-      pick/delete logos; hero colour picker with contrast warning). Tables `site_images`, `site_settings`
-      (migration 0006: run `npm run db:migrate` on each branch). Hero now collapses on scroll (`HeroHeader`):
-      logo to 10%, thin pinned bar, nav sticks at `top-11`. The website line under the logo was removed.
-- [x] **Free-placement photos + text blocks** (built 2026-10-04, UNVERIFIED on a phone; ADR 0006, migration 0007):
-      pencil on -> each zone (under intro/Services/Prices/Reviews) shows Add photos (several at once, or drop files),
-      Add text, drag to arrange, up/down buttons, edit caption/text per language, delete. Not done: two-up photo
-      layouts, reordering the built-in sections, more zones, touch drag.
-      Also built: add/edit/move/delete your own services (e.g. Pressure washing), two zones per service card
-      (under title / under text; GIFs allowed, 1.5 MB), and hide/show sections (migration 0008). UNVERIFIED on a phone.
-- [x] **Enquiry inbox in /admin**: built (see above). Still to add: mark-as-spam/archive, search, a customers list page,
-      unread badge on the nav, reply templates editable in the admin.
-- [ ] **Production go-live, nearly done** (see `docs/GO-LIVE.md` STATUS): DB migrated, Worker deployed, domains attached,
-      Mapbox URLs added. **Remaining: run `bash scripts/set-prod-secrets.sh`**, verify (GO-LIVE step 5), Google OAuth redirect
-      URI + Sam as test user, Sam reads `/privacy`, test enquiry from a phone. Still to do after: Neon history retention up,
-      Mapbox usage alert, DMARC record, real reviews and Sam's real price before any marketing.
-- [ ] Real reviews (none invented), Sam's real price, before/after slider, area/SEO pages.
-- [x] WindowsWayfinder: first said keep separate (ADR 0007), then superseded the same day: **the work tracker is built here for Sam first** (ADR 0008); the route planner itself may come later, separately.
-- [ ] **Work tracker, slice 1 built 2026-10-04 (committed, NOT deployed, NOT migrated on staging/production; UNVERIFIED in a browser):** migration 0010, customers list (search, Due / Owing / round filters, call, text, WhatsApp, "coming tomorrow" text), add customer with Grab location, edit, delete (type "delete"), Squeegee CSV import, rounds (customer in many). To ship: `npm run db:migrate -- --branch staging` then deploy staging, try it, then production. **Slice 2 built the same day (committed, not deployed, UNVERIFIED in a browser):** visits (`jobs`): DONE panel with price and payment pre-filled and editable, one-tap MISSED, extras, date never in the future, edit and delete earlier visits, mark paid, debts; per-customer visit and payment history; /admin/work (Due this week by round, Also in this round, Also due this week, Debts, Payments); bottom tab bar on every admin page; greetings tidy ALL-CAPS names. **Map built the same day** (/admin/customers/map, UNVERIFIED on a phone): colour-keyed pins (red owes, orange overdue, yellow due this week, green up to date, grey no schedule), tap the key to filter, round chips, popups with a link to the customer; `npm run db:seed-demo -- --branch staging` adds 16 invented Bristol customers + 3 "Demo" rounds (`--remove` takes them out; it refuses production). **Still to build:** photos on a visit (R2), Templates screen (on/off, edit, rich editor for emails; SMSWorks later), weather on the admin home (Open-Meteo), drag-to-order within a round, invoices later.
-- [x] Real-device checks of sessions 2-3 (contact form, location/pin, logo and colour, blocks, own services, hide/show):
-      Tristan reports all good on a real phone (2026-10-04). Sam's own login on a phone is still worth one look.
-- [x] Sam's Gmail "send as" `hello@` with his own Resend key: done (Tristan, 2026-10-04).
-- [x] **Rich text for body copy** (built 2026-10-04, ADR 0007; UNVERIFIED in a browser and on a phone): the pencil's box for
-      body paragraphs, text blocks and service descriptions is now a rich editor (bold, italic, underline, lists, links;
-      Enter = new paragraph; blank lines kept). Unit-tested (sanitiser, plain-to-paragraph conversion, blank lines, saves
-      through the stores); the editing flow itself has NOT been exercised. **Check first on staging:** open the pencil on the
-      intro, press Enter twice, type, Save, reload, confirm the gap shows; then Revert; then the same in Welsh and in a text block.
-      Headings/labels are still the plain box (only nodes marked `rich` in `HomePage.tsx` changed).
+FINISH with /wrapup.
+```
 
 ## SEO (replaces Sam's ~£100/month agency; no ranking guarantees)
 
