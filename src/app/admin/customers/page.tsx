@@ -1,8 +1,8 @@
 import { AdminBar } from '@/components/AdminBar';
 import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { listCustomers, listRounds, todayLondon, type CustomerRow, type Filter } from '@/lib/customers';
-import { addRoundAction } from './actions';
+import { listCustomers, listPaymentMethods, listRounds, todayLondon, type CustomerRow, type Filter } from '@/lib/customers';
+import { addRoundAction, bulkSetupAction } from './actions';
 import { COMING_TOMORROW, fillTemplate, firstNameOf } from '@/lib/message-templates';
 import { getTemplate } from '@/lib/templates';
 import { isUkMobile, smsLink, telLink, whatsappLink } from '@/lib/phone';
@@ -16,6 +16,7 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: 'all', label: 'All' },
   { key: 'due', label: 'Due' },
   { key: 'owing', label: 'Owing' },
+  { key: 'unset', label: 'To set up' },
 ];
 const btn = 'flex min-h-11 items-center justify-center rounded-lg px-2 text-center text-sm font-bold text-brand-deep ring-1 ring-brand-deep/40 active:bg-brand/10';
 const topBtn = 'flex min-h-12 items-center justify-center rounded-xl px-4 text-center text-base font-bold text-brand-deep ring-1 ring-brand-deep/40 active:bg-brand/10';
@@ -78,28 +79,31 @@ function Row({ c, today, comingTomorrow }: { c: CustomerRow; today: string; comi
 export default async function CustomersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; q?: string; round?: string; ok?: string; error?: string }>;
+  searchParams: Promise<{ filter?: string; q?: string; round?: string; bulk?: string; ok?: string; error?: string }>;
 }) {
   const admin = await requireAdmin();
   const sp = await searchParams;
-  const filter: Filter = sp.filter === 'due' || sp.filter === 'owing' ? sp.filter : 'all';
+  const filter: Filter = sp.filter === 'due' || sp.filter === 'owing' || sp.filter === 'unset' ? sp.filter : 'all';
+  const bulk = sp.bulk === '1';
   const db = getDb();
   const today = todayLondon();
-  const [rows, everyone, rounds, comingTomorrowTemplate] = await Promise.all([
+  const [rows, everyone, rounds, comingTomorrowTemplate, methods] = await Promise.all([
     listCustomers({ filter, q: sp.q, roundId: sp.round, today }, db),
     listCustomers({}, db),
     listRounds(db),
     getTemplate(COMING_TOMORROW, db),
+    listPaymentMethods(db),
   ]);
   const comingTomorrow = comingTomorrowTemplate?.enabled === false ? null : (comingTomorrowTemplate?.body ?? null);
   const counts = {
     all: everyone.length,
     due: everyone.filter((c) => c.nextDue !== null && c.nextDue <= today).length,
     owing: everyone.filter((c) => c.owingPence > 0).length,
+    unset: everyone.filter((c) => c.pricePence === null || c.frequencyWeeks === null).length,
   };
   const href = (over: Record<string, string | undefined>) => {
     const p = new URLSearchParams();
-    const merged = { filter: filter === 'all' ? undefined : filter, q: sp.q, round: sp.round, ...over };
+    const merged = { filter: filter === 'all' ? undefined : filter, q: sp.q, round: sp.round, bulk: bulk ? '1' : undefined, ...over };
     for (const [k, v] of Object.entries(merged)) if (v) p.set(k, v);
     const s = p.toString();
     return `/admin/customers${s ? `?${s}` : ''}`;
@@ -129,11 +133,18 @@ export default async function CustomersPage({
           <a href="/admin/customers/import" className={topBtn}>
             Import
           </a>
+          <a href={href({ bulk: bulk ? undefined : '1' })} className={topBtn}>
+            {bulk ? 'Done setting up' : '✅ Set up several'}
+          </a>
+          <a href="/admin/rounds" className={topBtn}>
+            🔁 Rounds
+          </a>
         </div>
 
         <form action="/admin/customers" className="flex gap-2">
           {filter !== 'all' && <input type="hidden" name="filter" value={filter} />}
           {sp.round && <input type="hidden" name="round" value={sp.round} />}
+          {bulk && <input type="hidden" name="bulk" value="1" />}
           <input
             name="q"
             defaultValue={sp.q}
@@ -173,6 +184,65 @@ export default async function CustomersPage({
           <p className="rounded-xl bg-white p-6 text-center text-ink/70 ring-1 ring-ink/10">
             {everyone.length === 0 ? 'No customers yet. Add one, or import the Squeegee file.' : 'Nobody matches that.'}
           </p>
+        ) : bulk ? (
+          <form action={bulkSetupAction} className="flex flex-col gap-3">
+            <input type="hidden" name="back" value={href({})} />
+            <div className="sticky top-0 z-10 flex flex-col gap-2 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-300">
+              <p className="text-sm font-bold text-amber-950">Tick the customers, fill in only what you want to set, then Apply. Blank boxes are left alone.</p>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="text-sm font-semibold text-ink/80">
+                  Price (£)
+                  <input name="price" inputMode="decimal" placeholder="15" className="mt-1 w-full rounded-xl border border-ink/20 bg-white p-3 text-base font-normal" />
+                </label>
+                <label className="text-sm font-semibold text-ink/80">
+                  Every (weeks)
+                  <input name="frequencyWeeks" inputMode="numeric" placeholder="4" className="mt-1 w-full rounded-xl border border-ink/20 bg-white p-3 text-base font-normal" />
+                </label>
+                <label className="text-sm font-semibold text-ink/80">
+                  Add to round
+                  <select name="roundId" defaultValue="" className="mt-1 w-full rounded-xl border border-ink/20 bg-white p-3 text-base font-normal">
+                    <option value="">Leave</option>
+                    {rounds.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="text-sm font-semibold text-ink/80">
+                  Usually pays by
+                  <select name="preferredPayment" defaultValue="" className="mt-1 w-full rounded-xl border border-ink/20 bg-white p-3 text-base font-normal">
+                    <option value="">Leave</option>
+                    {methods.map((m) => (
+                      <option key={m.key} value={m.key}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <button type="submit" className="rounded-xl bg-brand-deep px-4 py-3 text-lg font-black text-white">
+                Apply to ticked
+              </button>
+            </div>
+            <ul className="flex flex-col gap-2">
+              {rows.map((c) => (
+                <li key={c.id}>
+                  <label className="flex cursor-pointer items-center gap-3 rounded-xl bg-white p-3 shadow-sm ring-1 ring-ink/10">
+                    <input type="checkbox" name="ids" value={c.id} className="h-6 w-6 shrink-0" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-black">{c.name}</span>
+                      <span className="block truncate text-sm text-ink/80">{[c.address, c.postcode].filter(Boolean).join(', ') || 'No address yet'}</span>
+                      <span className="block text-xs text-ink/70">
+                        {c.pricePence !== null ? pounds(c.pricePence) : 'No price'} · {c.frequencyWeeks ? `every ${c.frequencyWeeks} wk` : 'no frequency'}
+                        {c.rounds.length ? ` · ${c.rounds.map((r) => r.name).join(', ')}` : ''}
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </form>
         ) : (
           <ul className="flex flex-col gap-2">
             {rows.map((c) => (

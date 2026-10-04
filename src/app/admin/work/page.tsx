@@ -2,7 +2,8 @@ import { AdminBar } from '@/components/AdminBar';
 import { MarkPaidForm, VisitForm } from '@/components/admin/VisitForm';
 import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { listCustomers, listPaymentMethods, listRounds, todayLondon, type CustomerRow } from '@/lib/customers';
+import { listCustomers, listPaymentMethods, listRoundOrder, listRounds, todayLondon, type CustomerRow } from '@/lib/customers';
+import { listEntries } from '@/lib/schedule';
 import { endOfWeek, listDebts, listPayments } from '@/lib/jobs';
 import { WeatherWeek } from '@/components/admin/WeatherWeek';
 import { BASE, centroid, getForecast, isoWeekday } from '@/lib/weather';
@@ -72,14 +73,23 @@ export default async function WorkPage({
   const db = getDb();
   const today = todayLondon();
   const weekEnd = endOfWeek(today);
-  const [everyone, rounds, methods] = await Promise.all([listCustomers({}, db), listRounds(db), listPaymentMethods(db)]);
+  const [everyone, rounds, methods, scheduledToday] = await Promise.all([
+    listCustomers({}, db),
+    listRounds(db),
+    listPaymentMethods(db),
+    listEntries(today, today, db).catch(() => []),
+  ]);
 
   const round = rounds.find((r) => r.id === sp.round);
   const dueThisWeek = everyone.filter((c) => c.nextDue !== null && c.nextDue <= weekEnd).sort((a, b) => (a.nextDue! < b.nextDue! ? -1 : 1));
   const inRound = (c: CustomerRow) => !round || c.rounds.some((r) => r.id === round.id);
-  const due = dueThisWeek.filter(inRound);
+  // A selected round is listed in the order Sam works it (Rounds screen); everything else by due date.
+  const stopOrder = round ? await listRoundOrder(round.id, db) : [];
+  const byStop = (a: CustomerRow, b: CustomerRow) => stopOrder.indexOf(a.id) - stopOrder.indexOf(b.id);
+  const due = dueThisWeek.filter(inRound).sort(round ? byStop : () => 0);
   const alsoDue = round ? dueThisWeek.filter((c) => !inRound(c)) : [];
-  const alsoInRound = round ? everyone.filter((c) => inRound(c) && !dueThisWeek.includes(c)) : [];
+  const alsoInRound = round ? everyone.filter((c) => inRound(c) && !dueThisWeek.includes(c)).sort(byStop) : [];
+  const todaysRounds = scheduledToday.filter((e) => e.kind === 'round' && e.roundId);
 
   // Weather for the selected round, centred on its customers' pins (falls back to Sam's base); the round's
   // usual weekday is outlined in the week. Fails soft: no forecast, no tile.
@@ -114,6 +124,21 @@ export default async function WorkPage({
 
         {sp.ok && <p role="status" className="rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-900">{sp.ok}</p>}
         {sp.error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-800">{sp.error}</p>}
+
+        {todaysRounds.length > 0 && view === 'due' && (
+          <p className="rounded-xl bg-brand/10 p-3 text-sm font-semibold text-brand-deep">
+            📅 Today:{' '}
+            {todaysRounds.map((e, i) => (
+              <span key={e.id}>
+                {i > 0 && ', '}
+                <a href={`/admin/work?round=${e.roundId}`} className="underline">
+                  {e.roundName}
+                </a>
+                {e.starts ? ` from ${e.starts}` : ''}
+              </span>
+            ))}
+          </p>
+        )}
 
         <nav aria-label="Work" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tab('due', 'Due this week', dueThisWeek.length)}

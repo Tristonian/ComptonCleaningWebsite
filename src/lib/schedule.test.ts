@@ -115,3 +115,26 @@ describe('schedule store', () => {
     expect(await isTakingCalls(new Date(), broken)).toBe(true);
   });
 });
+
+import { addDays, monthGrid, shiftMonth, validDate, weekStart } from './schedule-shared';
+
+describe('calendar dates', () => {
+  it('does date arithmetic across month and clock-change boundaries', () => {
+    expect(addDays('2026-10-31', 1)).toBe('2026-11-01');
+    expect(addDays('2026-03-28', 2)).toBe('2026-03-30'); // clocks go forward on the 29th
+    expect(weekStart('2026-10-04')).toBe('2026-09-28'); // a Sunday belongs to the week before
+    expect(weekStart('2026-10-05')).toBe('2026-10-05');
+    expect(validDate('2026-02-30')).toBeNull();
+    expect(validDate('2026-02-28')).toBe('2026-02-28');
+  });
+
+  it('lays a month out in Monday-first weeks', () => {
+    const grid = monthGrid('2026-10-15');
+    expect(grid[0][0]).toBe('2026-09-28');
+    expect(grid.every((w) => w.length === 7)).toBe(true);
+    expect(grid.flat()).toContain('2026-10-31');
+    expect(grid.at(-1)![6] >= '2026-10-31').toBe(true);
+    expect(shiftMonth('2026-12-15', 1)).toBe('2027-01-01');
+    expect(shiftMonth('2026-01-15', -1)).toBe('2025-12-01');
+  });
+});

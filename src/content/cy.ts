@@ -19,6 +19,8 @@ export const cy: Record<string, string> = {
   'nav.contact': 'Cysylltu â ni',
   'nav.reviews': 'Adolygiadau',
   'nav.call': 'Ffoniwch',
+  'hero.away': 'Dydw i ddim yn gweithio ar hyn o bryd. Gadewch neges i mi.',
+  'contact.away': 'Dydw i ddim yn gweithio ar hyn o bryd. Gadewch neges i mi.',
   'nav.text': 'Tecstiwch',
   'services.title': 'Gwasanaethau',
   'services.windows.title': 'Glanhau ffenestri',

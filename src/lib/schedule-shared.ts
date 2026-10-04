@@ -59,3 +59,44 @@ export function callableAt(now: Date, weekly: { weekday: number; opens: string; 
   const { date, time } = londonParts(now);
   return windowsOn(date, weekly, entries).some((w) => time >= w.opens && time < w.closes);
 }
+
+/** YYYY-MM-DD plus a number of days (calendar arithmetic in UTC, so the clock change cannot shift a date). */
+export function addDays(date: string, days: number): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+/** The Monday of the week containing `date`. */
+export function weekStart(date: string): string {
+  return addDays(date, 1 - weekdayOf(date));
+}
+
+/** A valid YYYY-MM-DD, or null. */
+export function validDate(v: unknown): string | null {
+  const s = String(v ?? '').trim();
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))).toISOString().slice(0, 10) === s ? s : null;
+}
+
+/** The weeks that show a month, Monday first, each as seven dates (days outside the month included). */
+export function monthGrid(date: string): string[][] {
+  const first = `${date.slice(0, 7)}-01`;
+  const start = weekStart(first);
+  const month = date.slice(0, 7);
+  const weeks: string[][] = [];
+  for (let w = 0; w < 6; w++) {
+    const row = Array.from({ length: 7 }, (_, i) => addDays(start, w * 7 + i));
+    if (w > 0 && row[0].slice(0, 7) !== month) break;
+    weeks.push(row);
+  }
+  return weeks;
+}
+
+/** The first of the month before / after. */
+export function shiftMonth(date: string, by: number): string {
+  const [y, m] = date.split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + by, 1, 12));
+  return d.toISOString().slice(0, 10);
+}

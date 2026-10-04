@@ -51,9 +51,14 @@ export default async function AdminHome() {
           <span className="text-sm text-ink/70">Who is due, who owes, call or text in one tap. Add customers, import from Squeegee.</span>
         </a>
 
-        <a href="/admin/appearance" className={tile}>
-          <span className="text-xl font-black text-brand-deep">Logo and colour</span>
-          <span className="text-sm text-ink/70">Upload and switch the logo at the top of the site, and change the header colour.</span>
+        <a href="/admin/calendar" className={tile}>
+          <span className="text-xl font-black text-brand-deep">Calendar</span>
+          <span className="text-sm text-ink/70">Schedule your rounds, and set the days and hours the website offers the Call button.</span>
+        </a>
+
+        <a href="/admin/settings" className={tile}>
+          <span className="text-xl font-black text-brand-deep">Settings</span>
+          <span className="text-sm text-ink/70">Rounds and their order, call hours, ways of paying, texts and emails, logo and colour.</span>
         </a>
 
         <a href="/" className={tile}>

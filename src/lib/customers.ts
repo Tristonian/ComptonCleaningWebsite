@@ -42,7 +42,8 @@ export type CustomerRow = {
   rounds: { id: string; name: string }[];
 };
 
-export type Filter = 'all' | 'due' | 'owing';
+/** 'unset' = still needs a price or a frequency (imported customers arrive without either). */
+export type Filter = 'all' | 'due' | 'owing' | 'unset';
 
 type Raw = {
   id: string;
@@ -123,6 +124,7 @@ export async function listCustomers(
   const rows = await db.query<Raw>(`${SELECT} ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY c.name`, params);
   const all = rows.map(toRow);
   if (args.filter === 'due') return all.filter((c) => c.nextDue !== null && c.nextDue <= today).sort((a, b) => (a.nextDue! < b.nextDue! ? -1 : 1));
+  if (args.filter === 'unset') return all.filter((c) => c.pricePence === null || c.frequencyWeeks === null);
   if (args.filter === 'owing') return all.filter((c) => c.owingPence > 0).sort((a, b) => b.owingPence - a.owingPence);
   return all;
 }

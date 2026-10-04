@@ -10,15 +10,20 @@ import { usePathname } from 'next/navigation';
 const TABS = [
   { href: '/admin', label: 'Home', icon: '🏠' },
   { href: '/admin/work', label: 'Work', icon: '🧽' },
+  { href: '/admin/calendar', label: 'Calendar', icon: '📅' },
   { href: '/admin/customers', label: 'Customers', icon: '👥' },
   { href: '/admin/enquiries', label: 'Enquiries', icon: '📥' },
-  { href: '/admin/templates', label: 'Templates', icon: '✉️' },
-  { href: '/admin/appearance', label: 'Site', icon: '🎨' },
+  { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
 ];
+
+/** Screens reached from the Settings hub keep its tab lit. */
+const SETTINGS_PATHS = ['/admin/settings', '/admin/rounds', '/admin/templates', '/admin/appearance'];
 
 export function AdminTabs() {
   const path = usePathname() ?? '';
-  const active = (href: string) => (href === '/admin' ? path === '/admin' : path === href || path.startsWith(`${href}/`));
+  const inside = (href: string) => path === href || path.startsWith(`${href}/`);
+  const active = (href: string) =>
+    href === '/admin' ? path === '/admin' : href === '/admin/settings' ? SETTINGS_PATHS.some(inside) : inside(href);
   return (
     <nav aria-label="Admin" className="admin-tabs fixed inset-x-0 bottom-0 z-20 border-t border-ink/10 bg-white/95 backdrop-blur print:hidden">
       <div className="mx-auto grid max-w-2xl grid-cols-6">

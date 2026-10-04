@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { getAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { createCustomer, createRound, deleteCustomer, importCustomers, updateCustomer, type CustomerInput } from '@/lib/customers';
+import { bulkSetup, createCustomer, createRound, deleteCustomer, importCustomers, updateCustomer, type CustomerInput } from '@/lib/customers';
 import { removePhotoObjects } from '@/lib/photo-store';
 import { parseCustomersCsv } from '@/lib/customers-csv';
 
@@ -35,6 +35,8 @@ function inputFrom(form: FormData): CustomerInput & { source?: unknown } {
     preferredPayment: text(form, 'preferredPayment'),
     roundIds: form.getAll('roundIds').map(String),
     source: text(form, 'source'),
+    // Only the edit form has this field; an add leaves it out (undefined) and a blank edit clears it.
+    lastCleaned: form.has('lastCleaned') ? text(form, 'lastCleaned') : undefined,
   };
 }
 
@@ -86,4 +88,17 @@ export async function importCustomersAction(csv: string): Promise<{ ok: boolean;
       parsed.problems.length ? ` ${parsed.problems.length} row${parsed.problems.length === 1 ? '' : 's'} skipped.` : ''
     }`,
   };
+}
+
+/** "Set up several": price / every / round / usual payment for the ticked customers; blank fields are left alone. */
+export async function bulkSetupAction(form: FormData): Promise<void> {
+  const a = await admin();
+  const r = await bulkSetup(
+    form.getAll('ids').map(String),
+    { price: text(form, 'price'), frequencyWeeks: text(form, 'frequencyWeeks'), roundId: text(form, 'roundId'), preferredPayment: text(form, 'preferredPayment') },
+    a.email,
+    getDb(),
+  );
+  const back = /^\/admin\/customers(\?[\w=&%.\-]*)?$/.test(text(form, 'back')) ? text(form, 'back') : '/admin/customers?bulk=1';
+  redirect(withFlash(back, r.ok ? 'ok' : 'error', r.ok ? `Updated ${r.changed} customer${r.changed === 1 ? '' : 's'}.` : r.error));
 }

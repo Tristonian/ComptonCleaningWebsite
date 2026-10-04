@@ -16,6 +16,7 @@ type Initial = {
   frequencyWeeks?: string;
   preferredPayment?: string;
   roundIds?: string[];
+  lastCleaned?: string;
 };
 
 const field = 'mt-1 w-full rounded-xl border border-ink/20 bg-white p-3 text-base font-normal text-ink focus:border-brand focus:outline-none';
@@ -183,6 +184,15 @@ export function CustomerForm({
               ))}
             </select>
           </label>
+          {initial.id && (
+            <label className={label}>
+              Last cleaned (before you started using this)
+              <input name="lastCleaned" type="date" defaultValue={initial.lastCleaned ?? ''} className={field} />
+              <span className="mt-1 block text-xs font-normal text-ink/70">
+                Sets when they are next due. A visit you record later takes over from this date.
+              </span>
+            </label>
+          )}
           <label className={label}>
             Email
             <input name="email" type="email" defaultValue={initial.email} autoComplete="off" className={field} />

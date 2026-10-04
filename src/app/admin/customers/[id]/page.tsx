@@ -56,6 +56,7 @@ export default async function CustomerPage({
             frequencyWeeks: c.frequencyWeeks === null ? '' : String(c.frequencyWeeks),
             preferredPayment: c.preferredPayment,
             roundIds: c.rounds.map((r) => r.id),
+            lastCleaned: c.baselineDoneOn ?? '',
           }}
           rounds={rounds}
           payments={payments}
