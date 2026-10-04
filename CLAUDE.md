@@ -66,8 +66,10 @@ Google admin login (confirmed working), the `<Ed>` pencil, the `/cy` Welsh switc
 public site with a working contact form (Resend; `hello@` send/receive set up; location + Mapbox pin),
 an `/admin` enquiry inbox (read, reply, notes, status, add as customer), and (session 3) logo upload with
 cropper and a header colour picker, a collapsing hero bar, photo/GIF/text blocks Sam adds and arranges from the pencil
-(ADR 0006), services he adds himself, and hide/show for sections. Not yet done: real reviews, and production is not
-deployed (it needs migrations 0006-0008). What is and is not verified
+(ADR 0006), services he adds himself, hide/show for sections, editable contact-form drop-downs, a favicon and a
+privacy page. **Production is deployed** to https://comptoncleaning.co.uk (migrated 0001-0009) but its Worker
+secrets are NOT set yet: run `bash scripts/set-prod-secrets.sh`, then follow `docs/GO-LIVE.md`. Not yet done: real
+reviews, SEO (see ROADMAP). What is and is not verified
 (almost nothing is checked on a real phone yet) is in `docs/NEXT_STEPS.md`; read it before building on
 anything. Email setup and its gotchas: `docs/INFRASTRUCTURE.md` section 3.
 

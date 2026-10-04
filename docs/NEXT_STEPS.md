@@ -206,9 +206,10 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
       (under title / under text; GIFs allowed, 1.5 MB), and hide/show sections (migration 0008). UNVERIFIED on a phone.
 - [x] **Enquiry inbox in /admin**: built (see above). Still to add: mark-as-spam/archive, search, a customers list page,
       unread badge on the nav, reply templates editable in the admin.
-- [ ] Production: `db:migrate -- --branch production`, secrets (`DATABASE_URL`, `RESEND_API`, `ENQUIRY_TO`,
-      `MAPBOX_TOKEN`, Google OAuth, `SESSION_SECRET` new), DNS for the apex, www redirect, privacy policy (must
-      mention Mapbox + postcodes.io + Resend), Neon history retention up, Mapbox usage alert.
+- [ ] **Production go-live, nearly done** (see `docs/GO-LIVE.md` STATUS): DB migrated, Worker deployed, domains attached,
+      Mapbox URLs added. **Remaining: run `bash scripts/set-prod-secrets.sh`**, verify (GO-LIVE step 5), Google OAuth redirect
+      URI + Sam as test user, Sam reads `/privacy`, test enquiry from a phone. Still to do after: Neon history retention up,
+      Mapbox usage alert, DMARC record, real reviews and Sam's real price before any marketing.
 - [ ] Real reviews (none invented), Sam's real price, before/after slider, area/SEO pages.
 - [ ] Decide the WindowsWayfinder boundary (CLAUDE.md says do not merge; Tristan says it stalled and wants the
       planner here for Sam first): write an ADR, then update CLAUDE.md.

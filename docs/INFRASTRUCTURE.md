@@ -72,7 +72,7 @@ aws-eu-west-2 (London), database `neondb`, role `neondb_owner`. Three branches, 
 
 | Branch | Used by | Connection string lives in |
 |---|---|---|
-| `production` | the production Worker (not deployed yet) | Worker secret `DATABASE_URL` (to set) |
+| `production` | the production Worker `compton-cleaning`, DEPLOYED 2026-10-04, migrated 0001-0009 | Worker secrets NOT yet set: run `bash scripts/set-prod-secrets.sh` (docs/GO-LIVE.md) |
 | `staging` | the staging Worker | Worker secret `DATABASE_URL` (set, verified) |
 | `dev` | local `npm run dev` | `.env.local` `DATABASE_URL` |
 

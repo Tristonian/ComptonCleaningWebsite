@@ -1,6 +1,17 @@
 # Go-live runbook (comptoncleaning.co.uk)
 
-Why the domain is dead today: the **production Worker `compton-cleaning` has never been deployed**, so there is no
+## STATUS (2026-10-04, end of session 3)
+- [x] Step 1 production database migrated (0001-0009).
+- [x] Step 2 Worker deployed; `comptoncleaning.co.uk` and `www` attached (apex 200, www -> apex 301). Version `38a97190`.
+- [x] Mapbox allowed URLs added (apex and www) by Tristan.
+- [ ] **Step 3 secrets NOT set yet** (the assistant's secret writes were blocked by the permission check). Run
+      `bash scripts/set-prod-secrets.sh` once, then step 5. Until then the public page renders with defaults, the contact
+      form cannot store enquiries and admin login does not work.
+- [ ] Step 4 remaining hand steps: Google OAuth redirect URI + Sam as test user, Sam reads `/privacy`.
+- A machine whose DNS cached the old "no such domain" answer may show the site as unreachable for a few minutes
+  (use `curl --doh-url https://cloudflare-dns.com/dns-query https://comptoncleaning.co.uk/` to bypass).
+
+Why the domain was dead: the **production Worker `compton-cleaning` had never been deployed**, so there was no
 Worker, no domain route and no DNS record for the apex. Everything the code needs is prepared (routes for the apex and
 `www` in `wrangler.jsonc`, `www` -> apex redirect in `src/middleware.ts`, `/privacy` page). The steps below touch the real
 production database, Worker secrets and domain, so a human runs them (or says "go" to a session that has permission).
@@ -23,6 +34,8 @@ npm run deploy
 The site will not work until step 3 (no secrets yet). That is expected.
 
 ## 3. Worker secrets (production, so no `--env`)
+**Easiest: `bash scripts/set-prod-secrets.sh`** (does everything below). The manual version:
+
 Values come from `.env.local` (Google, Resend, Mapbox, allow-list). `DATABASE_URL` is the PRODUCTION Neon branch, not dev.
 ```sh
 put() { grep -m1 "^$1=" .env.local | cut -d= -f2- | tr -d '"\r' | npx wrangler secret put "$1"; }

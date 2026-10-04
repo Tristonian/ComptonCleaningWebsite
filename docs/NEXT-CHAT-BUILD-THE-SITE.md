@@ -63,18 +63,31 @@ click goes to top, nav sticks at `top-11`); the website line is gone; photo/GIF/
 (`custom_services`, `ServiceTools`); two zones per service card (under title / under text, GIFs up to 1.5 MB untouched);
 **hide/show** sections (`Hideable`, `site_settings.hidden_sections`; Contact is never hideable).
 
-Migrations 0006 (appearance), 0007 (blocks), 0008 (custom services) are applied to dev and staging, NOT production.
+Also built later in session 3: **editable contact-form drop-downs** (migration 0009, `form-options.ts`, `OptionsEditor`; once a
+list is edited, enquiries store `custom:<English label>`; services Sam adds appear in the service list automatically); a
+favicon/app icons from the CCS mark (`src/app/icon.png`, `apple-icon.png`, `favicon.ico`); `/privacy` page (Sam to review);
+www -> apex redirect; SEO added to `docs/ROADMAP.md` as a first-class goal.
+
+**PRODUCTION (important):** migrated 0001-0009 and the Worker is deployed to https://comptoncleaning.co.uk (+ www redirect),
+Mapbox URLs added by Tristan. **Worker secrets are NOT set**: the assistant's secret writes were blocked by the permission
+check. Tristan runs `bash scripts/set-prod-secrets.sh` once (it reads `.env.local`, makes a NEW `SESSION_SECRET`, sets
+`ENQUIRY_TO=hello@comptoncleaning.co.uk`, fetches the production `DATABASE_URL`), then verify per `docs/GO-LIVE.md` step 5.
+Until then the public page shows defaults, the form cannot store enquiries and admin login does not work. Still hand steps:
+Google OAuth redirect URI for the apex + Sam as a test user; Sam reads `/privacy`.
+
 Gotchas: a plain `npm run db:migrate` only hits the dev branch, use `-- --branch staging|production`. There is no CI
-deploy: push does nothing, run `CLOUDFLARE_ACCOUNT_ID=f63f... npm run deploy:staging` (stop `next dev` first). The
-Windows shell chokes on long heredocs with quotes: write patch scripts to a file. Next: Tristan tests on his phone
-(blocks, ▲▼, GIF, hide, logo sheet), then production go-live (see NEXT_STEPS), then the parked ideas.
+deploy: push does nothing, run `CLOUDFLARE_ACCOUNT_ID=f63f... npm run deploy:staging` (or `npm run deploy` for production;
+stop `next dev` first). Check `git branch --show-current` before committing: staging and main are kept identical now.
+The Windows shell chokes on long heredocs with quotes: write patch scripts to a file. A machine that cached "no such
+domain" may not see the new site for a few minutes (bypass: `curl --doh-url https://cloudflare-dns.com/dns-query`).
+Everything built in session 3 is UNVERIFIED on a real phone.
 
 ## Paste this
 
-> Read CLAUDE.md, docs/NEXT_STEPS.md, docs/INFRASTRUCTURE.md, ADR 0005 and docs/NEXT-CHAT-BUILD-THE-SITE.md.
-> Staging has the site, the contact form and the /admin enquiry inbox. First I'll test on my phone and tell
-> you what I see (Google login, pencil, form, email, location, map zoom, sending a reply). Then build, in
-> this order: the logo viewer/changer in /admin (file picker + cropper, R2, admin-only) with a colour picker
-> for the hero background; then production go-live. Ideas parked in NEXT_STEPS: price/house animation,
-> tracker/planner, weather, referrals and review promos, cancellations, template emails (editable), location
-> ideas (read the privacy notes). Decide the WindowsWayfinder boundary with me before the planner.
+> Read CLAUDE.md, docs/GO-LIVE.md (STATUS at the top), docs/NEXT_STEPS.md, docs/ROADMAP.md and docs/NEXT-CHAT-BUILD-THE-SITE.md.
+> Production is deployed but I have run (or am about to run) `bash scripts/set-prod-secrets.sh`: help me verify it on the
+> wire and on my phone (admin login, pencil tools, a test enquiry). Then I'll tell you what I see testing the new
+> pencil features on staging/production (logo sheet, blocks and arranging, GIFs, my own services, hide/show, editable
+> drop-downs). After that the priorities are: real reviews and Sam's real price, then SEO (ROADMAP "SEO: do it
+> properly"), then the parked ideas in NEXT_STEPS (price/house animation, tracker/planner, weather, referrals,
+> cancellations, template emails). Decide the WindowsWayfinder boundary with me before the planner.
