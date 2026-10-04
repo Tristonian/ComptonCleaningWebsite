@@ -16,7 +16,8 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: 'due', label: 'Due' },
   { key: 'owing', label: 'Owing' },
 ];
-const btn = 'rounded-lg px-3 py-2 text-sm font-bold ring-1 ring-brand-deep/40 text-brand-deep active:bg-brand/10';
+const btn = 'flex min-h-11 items-center justify-center rounded-lg px-2 text-center text-sm font-bold text-brand-deep ring-1 ring-brand-deep/40 active:bg-brand/10';
+const topBtn = 'flex min-h-12 items-center justify-center rounded-xl px-4 text-center text-base font-bold text-brand-deep ring-1 ring-brand-deep/40 active:bg-brand/10';
 
 function Row({ c, today }: { c: CustomerRow; today: string }) {
   const overdue = c.nextDue !== null && c.nextDue <= today;
@@ -48,8 +49,8 @@ function Row({ c, today }: { c: CustomerRow; today: string }) {
         </span>
       </a>
       {c.phone && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          <a href={telLink(c.phone)} className={btn}>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <a href={telLink(c.phone)} className={`${btn} ${isUkMobile(c.phone) ? '' : 'col-span-3'}`}>
             📞 Call
           </a>
           {isUkMobile(c.phone) && (
@@ -60,7 +61,7 @@ function Row({ c, today }: { c: CustomerRow; today: string }) {
               <a href={whatsappLink(c.phone)} className={btn} target="_blank" rel="noreferrer">
                 WhatsApp
               </a>
-              <a href={smsLink(c.phone, message)} className={btn} title={message}>
+              <a href={smsLink(c.phone, message)} className={`${btn} col-span-3`} title={message}>
                 ⏰ Coming tomorrow
               </a>
             </>
@@ -113,14 +114,14 @@ export default async function CustomersPage({
         {sp.ok && <p role="status" className="rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-900">{sp.ok}</p>}
         {sp.error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-800">{sp.error}</p>}
 
-        <div className="flex gap-2">
-          <a href="/admin/customers/new" className="flex-1 rounded-xl bg-brand-deep px-4 py-3 text-center text-lg font-black text-white">
+        <div className="grid grid-cols-2 gap-2">
+          <a href="/admin/customers/new" className="col-span-2 flex min-h-14 items-center justify-center rounded-xl bg-brand-deep px-4 text-center text-lg font-black text-white">
             ➕ Add customer
           </a>
-          <a href="/admin/customers/map" className="rounded-xl px-4 py-3 text-sm font-bold text-brand-deep ring-1 ring-brand-deep/40">
+          <a href="/admin/customers/map" className={topBtn}>
             🗺️ Map
           </a>
-          <a href="/admin/customers/import" className="rounded-xl px-4 py-3 text-sm font-bold text-brand-deep ring-1 ring-brand-deep/40">
+          <a href="/admin/customers/import" className={topBtn}>
             Import
           </a>
         </div>
