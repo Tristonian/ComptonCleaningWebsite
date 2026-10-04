@@ -13,7 +13,7 @@ so this must stay small.
 
 - **Blocks in named zones**, not a free-form page builder. A zone is a labelled place in code
   (`src/lib/blocks-shared.ts` `ZONES`, one `<BlockZone>` in `HomePage`): under the intro, Services, Prices,
-  Reviews. Adding a place = one array entry + one component line. The built-in sections themselves stay fixed.
+  Reviews, plus one inside each service card. Adding a place = one array entry + one component line. The built-in sections themselves stay fixed.
 - A block is a **photo** (with optional caption) or a **text** paragraph, stored in `page_blocks` (migration
   0007) with a zone and an order position. Text and captions are stored per language; Welsh falls back to English.
 - **Photos** share `site_images` and R2 with the logos (`photo/<sha256>`; ADR 0002 rules: resized in the browser,

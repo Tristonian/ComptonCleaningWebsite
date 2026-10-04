@@ -88,6 +88,7 @@ export async function HomePage() {
             <Ed id="services.windows.body" as="p" className="text-ink/80">
               {'We specialise in regular window maintenance. A regular clean includes windows, frames, doors and sills. Optional extras include interiors, glass roofs and complete conservatory cleaning.'}
             </Ed>
+            <BlockZone zone="service-windows" compact blocks={blocks.filter((b) => b.zone === "service-windows")} />
           </article>
           <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
             <Ed id="services.gutters.title" as="h3" className="mb-2 text-xl font-bold">
@@ -96,6 +97,7 @@ export async function HomePage() {
             <Ed id="services.gutters.body" as="p" className="text-ink/80">
               {'Gutter work can include removing debris from the gutter and/or downpipe, cleaning the exteriors and fascias, or repairing the gutters.'}
             </Ed>
+            <BlockZone zone="service-gutters" compact blocks={blocks.filter((b) => b.zone === "service-gutters")} />
           </article>
           <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
             <Ed id="services.other.title" as="h3" className="mb-2 text-xl font-bold">
@@ -104,6 +106,7 @@ export async function HomePage() {
             <Ed id="services.other.body" as="p" className="text-ink/80">
               Pressure washing · Render cleaning · Minor exterior repairs
             </Ed>
+            <BlockZone zone="service-other" compact blocks={blocks.filter((b) => b.zone === "service-other")} />
           </article>
         </div>
       </section>

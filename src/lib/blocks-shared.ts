@@ -3,6 +3,9 @@
 /** The places a block can go, top to bottom on the page. Adding a zone = add here + one <BlockZone> in HomePage. */
 export const ZONES = [
   { id: 'intro', label: 'Under the intro' },
+  { id: 'service-windows', label: 'Under Window cleaning' },
+  { id: 'service-gutters', label: 'Under Gutters' },
+  { id: 'service-other', label: 'Under Other jobs' },
   { id: 'services', label: 'Under Services' },
   { id: 'prices', label: 'Under Prices' },
   { id: 'reviews', label: 'Under Reviews' },

@@ -24,7 +24,7 @@ import {
 const MOVE_ID = 'application/x-compton-block';
 const BIG = 1_000_000; // "the end" for placeBlock, which clamps
 
-export function BlockZone({ zone, blocks }: { zone: ZoneId; blocks: Block[] }) {
+export function BlockZone({ zone, blocks, compact = false }: { zone: ZoneId; blocks: Block[]; compact?: boolean }) {
   const { editing, locale } = useEditMode();
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -106,7 +106,7 @@ export function BlockZone({ zone, blocks }: { zone: ZoneId; blocks: Block[] }) {
 
   return (
     <div
-      className={`mx-auto max-w-2xl px-4 py-3 ${editing ? 'my-2 rounded-xl outline-dashed outline-2 outline-offset-[-2px] outline-brand-deep/40' : ''}`}
+      className={`${compact ? 'mt-4' : 'mx-auto max-w-2xl px-4 py-3'} ${editing ? 'my-2 rounded-xl outline-dashed outline-2 outline-offset-[-2px] outline-brand-deep/40' : ''}`}
       onDragOver={(e) => {
         if (!editing) return;
         e.preventDefault();
