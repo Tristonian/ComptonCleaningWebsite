@@ -15,8 +15,8 @@ Things that cannot be done from code. Tick them off; record real values (never s
 - [x] R2 enabled.
 - [ ] Create API token (Workers Scripts:Edit, R2:Edit, DNS:Edit on the zone).
       Store in GitHub secrets as `CLOUDFLARE_API_TOKEN`, plus `CLOUDFLARE_ACCOUNT_ID`.
-- [x] Created 2026-10-04 (weur): D1 `compton-cleaning` and `compton-cleaning-staging` (**now unused, ADR 0005:
-      delete once Tristan is happy**); R2 `compton-cleaning-images`, `-images-staging` (+ unused `-cache`, `-cache-staging`).
+- [x] Created 2026-10-04 (weur): D1 `compton-cleaning` and `compton-cleaning-staging` (**DELETED 2026-10-04 after the move to Neon, ADR 0005; a final staging export was taken to the temp dir, 4 KB of test data:
+      not kept**); R2 `compton-cleaning-images`, `-images-staging` (+ unused `-cache`, `-cache-staging`).
 - [x] workers.dev subdomain registered: `comptoncleaning`.
 - [x] **Staging Worker deployed**: https://compton-cleaning-staging.comptoncleaning.workers.dev
       Migration 0001 applied; four secrets set (values verified non-empty through the live Worker).
@@ -90,8 +90,7 @@ aws-eu-west-2 (London), database `neondb`, role `neondb_owner`. Three branches, 
 - **Secrets:** `NEON_API` was rotated by Tristan on 2026-10-04 after being used from an AI session.
   `.env.local` also holds the pulled `NEON_*` URLs (Data API/Auth: now dead). Never commit it.
 - **Before go-live:** raise history retention (currently 6 hours), set production `DATABASE_URL`, run
-  `db:migrate -- --branch production`, and delete the now-unused D1 databases (`compton-cleaning`,
-  `compton-cleaning-staging`) on Cloudflare once Tristan agrees.
+  `db:migrate -- --branch production`.
 - `neon.ts` is the empty config; `.neon` (gitignored) links this folder to the project. `neon config init`
   added `@neon/config`; npm reports audit warnings: review before CI/go-live.
 

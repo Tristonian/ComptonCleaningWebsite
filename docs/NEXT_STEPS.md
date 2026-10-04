@@ -15,7 +15,7 @@ pushed to GitHub**._
 | Staging | https://staging.comptoncleaning.co.uk (custom domain via `routes`; workers.dev is OFF) |
 | Production | Not deployed. `comptoncleaning.co.uk` has 0 DNS records. |
 | Cloudflare | Sam's account `f63f844d70738925fc7fb251893122cc`, Tristan is a member. Always pin `CLOUDFLARE_ACCOUNT_ID`. |
-| Data | **Neon Postgres** (ADR 0005, Sam's Neon account): branches `production` / `staging` / `dev`; `db/migrations/0001_init.sql` applied to `staging` + `dev`, NOT yet to `production`. R2 `compton-cleaning-images(-staging)`. D1 is no longer used (databases still exist: delete later). |
+| Data | **Neon Postgres** (ADR 0005, Sam's Neon account): branches `production` / `staging` / `dev`; `db/migrations/0001_init.sql` applied to `staging` + `dev`, NOT yet to `production`. R2 `compton-cleaning-images(-staging)`. D1 was deleted 2026-10-04. |
 | Auth | Google OAuth (ADR 0003). Consent screen in **Testing**; test users: Sam + Tristan. |
 | Local | `npm run dev` -> http://localhost:3000, against the Neon `dev` branch (`DATABASE_URL` in `.env.local`; migrate with `npm run db:migrate`). 66 tests (PGlite = real Postgres), `tsc` and `next build` clean. |
 
