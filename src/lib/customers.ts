@@ -28,6 +28,8 @@ export type CustomerRow = {
   phone: string;
   email: string;
   notes: string;
+  lat: number | null;
+  lng: number | null;
   pricePence: number | null;
   frequencyWeeks: number | null;
   preferredPayment: string;
@@ -47,6 +49,8 @@ type Raw = {
   phone: string;
   email: string;
   notes: string;
+  lat: number | null;
+  lng: number | null;
   price_pence: number | null;
   frequency_weeks: number | null;
   preferred_payment: string;
@@ -58,7 +62,7 @@ type Raw = {
 
 /** Dates are cast to text in SQL: Neon's driver and PGlite disagree on how they hand a `date` back. */
 const SELECT = `
-  SELECT c.id::text AS id, c.name, c.address, c.postcode, c.phone, c.email, c.notes,
+  SELECT c.id::text AS id, c.name, c.address, c.postcode, c.phone, c.email, c.notes, c.lat, c.lng,
          c.price_pence, c.frequency_weeks, c.preferred_payment,
          to_char(l.last_done, 'YYYY-MM-DD') AS last_done,
          to_char(CASE WHEN c.frequency_weeks IS NULL THEN NULL
@@ -84,6 +88,8 @@ const toRow = (r: Raw): CustomerRow => ({
   phone: r.phone,
   email: r.email,
   notes: r.notes,
+  lat: r.lat,
+  lng: r.lng,
   pricePence: r.price_pence,
   frequencyWeeks: r.frequency_weeks,
   preferredPayment: r.preferred_payment,
@@ -267,8 +273,10 @@ export async function updateCustomer(id: unknown, input: CustomerInput, by: stri
   try {
     const found = await db.query(
       `UPDATE customers SET name = $2, phone = $3, email = $4, address = $5, postcode = $6, notes = $7,
-              price_pence = $8, frequency_weeks = $9, preferred_payment = $10 WHERE id = $1 RETURNING id`,
-      [id, v.name, v.phone, v.email, v.address, v.postcode, v.notes, v.pricePence, v.frequencyWeeks, v.preferredPayment],
+              price_pence = $8, frequency_weeks = $9, preferred_payment = $10,
+              lat = coalesce($11, lat), lng = coalesce($12, lng) WHERE id = $1 RETURNING id`,
+      // A location is only replaced when a new one was grabbed; saving the form never wipes the pin.
+      [id, v.name, v.phone, v.email, v.address, v.postcode, v.notes, v.pricePence, v.frequencyWeeks, v.preferredPayment, v.lat, v.lng],
     );
     if (found.length === 0) return { ok: false, error: 'That customer no longer exists.' };
     const a = audit(by, 'customer_edited', { id: String(id) });

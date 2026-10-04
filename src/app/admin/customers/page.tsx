@@ -117,6 +117,9 @@ export default async function CustomersPage({
           <a href="/admin/customers/new" className="flex-1 rounded-xl bg-brand-deep px-4 py-3 text-center text-lg font-black text-white">
             ➕ Add customer
           </a>
+          <a href="/admin/customers/map" className="rounded-xl px-4 py-3 text-sm font-bold text-brand-deep ring-1 ring-brand-deep/40">
+            🗺️ Map
+          </a>
           <a href="/admin/customers/import" className="rounded-xl px-4 py-3 text-sm font-bold text-brand-deep ring-1 ring-brand-deep/40">
             Import
           </a>

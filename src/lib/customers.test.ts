@@ -111,6 +111,15 @@ describe('customers', () => {
     expect((await listRounds(db)).map((x) => x.customers)).toEqual([1, 1]);
   });
 
+  it('keeps the pin when an edit does not grab a new location, and replaces it when one is grabbed', async () => {
+    const c = await createCustomer({ name: 'Pin', lat: 51.5, lng: -2.5 }, 's', db);
+    if (!c.ok) throw new Error('create');
+    await updateCustomer(c.id, { name: 'Pin', address: 'x' }, 's', db);
+    expect(await getCustomer(c.id, db)).toMatchObject({ lat: 51.5, lng: -2.5 });
+    await updateCustomer(c.id, { name: 'Pin', address: 'x', lat: '51.6', lng: '-2.6' }, 's', db);
+    expect(await getCustomer(c.id, db)).toMatchObject({ lat: 51.6, lng: -2.6 });
+  });
+
   it('needs a name, and either an address or a location', async () => {
     expect((await createCustomer({ name: '' , address: 'x'}, 's', db)).ok).toBe(false);
     expect((await createCustomer({ name: 'No place' }, 's', db)).ok).toBe(false);
