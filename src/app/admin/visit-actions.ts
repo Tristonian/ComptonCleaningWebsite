@@ -44,8 +44,11 @@ function jobFrom(form: FormData): JobInput {
 export async function recordVisitAction(form: FormData): Promise<void> {
   const a = await admin();
   const back = backTo(form);
-  const r = await recordJob(text(form, 'customerId'), jobFrom(form), a.email, getDb());
-  redirect(flash(back, r.ok ? 'ok' : 'error', r.ok ? 'Visit saved.' : r.error));
+  const customerId = text(form, 'customerId');
+  const r = await recordJob(customerId, jobFrom(form), a.email, getDb());
+  // A done visit hands back its id so the Work screen can offer "Add photos" for it.
+  const photos = r.ok && r.id && text(form, 'status') === 'done' && /^\d+$/.test(customerId) ? `&job=${r.id}&cust=${customerId}` : '';
+  redirect(`${flash(back, r.ok ? 'ok' : 'error', r.ok ? 'Visit saved.' : r.error)}${photos}`);
 }
 
 export async function updateVisitAction(form: FormData): Promise<void> {

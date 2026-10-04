@@ -65,7 +65,7 @@ function Job({ c, methods, today, back }: { c: CustomerRow; methods: Method[]; t
 export default async function WorkPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; round?: string; ok?: string; error?: string }>;
+  searchParams: Promise<{ view?: string; round?: string; ok?: string; error?: string; job?: string; cust?: string }>;
 }) {
   const admin = await requireAdmin();
   const sp = await searchParams;
@@ -122,7 +122,16 @@ export default async function WorkPage({
       <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6">
         <h1 className="text-2xl font-bold text-brand-deep">Work</h1>
 
-        {sp.ok && <p role="status" className="rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-900">{sp.ok}</p>}
+        {sp.ok && (
+          <p role="status" className="rounded-xl bg-green-50 p-3 text-sm font-semibold text-green-900">
+            {sp.ok}
+            {sp.job && sp.cust && /^\d+$/.test(sp.job) && /^\d+$/.test(sp.cust) && (
+              <a href={`/admin/customers/${sp.cust}#visit-${sp.job}`} className="ml-2 inline-block rounded-lg bg-white px-3 py-1.5 font-bold text-brand-deep ring-1 ring-brand-deep/40">
+                📷 Add photos
+              </a>
+            )}
+          </p>
+        )}
         {sp.error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-800">{sp.error}</p>}
 
         {todaysRounds.length > 0 && view === 'due' && (

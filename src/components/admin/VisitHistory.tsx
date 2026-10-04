@@ -37,13 +37,17 @@ export function VisitHistory({
     <div className="flex flex-col gap-3">
       <p className="text-sm text-ink/80">
         {jobs.length} visit{jobs.length === 1 ? '' : 's'} · paid {pounds(paidTotal)}
+        {jobs.some((j) => j.photos.length > 0) && ` · ${jobs.reduce((n, j) => n + j.photos.length, 0)} photos`}
         {owing > 0 && <strong className="text-red-700"> · owes {pounds(owing)}</strong>}
       </p>
       <ul className="flex flex-col gap-2">
         {jobs.map((j) => (
-          <li key={j.id} className="rounded-xl bg-white p-3 shadow-sm ring-1 ring-ink/10">
+          <li key={j.id} id={`visit-${j.id}`} className="scroll-mt-4 rounded-xl bg-white p-3 shadow-sm ring-1 ring-ink/10 target:ring-2 target:ring-brand-deep">
             <div className="flex items-baseline justify-between gap-3">
-              <span className="font-bold">{day(j.doneOn)}</span>
+              <span className="font-bold">
+                {day(j.doneOn)}
+                {j.photos.length > 0 && <span className="ml-2 text-sm font-semibold text-ink/70">📷 {j.photos.length}</span>}
+              </span>
               {j.status === 'missed' ? (
                 <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-900">Missed</span>
               ) : (
