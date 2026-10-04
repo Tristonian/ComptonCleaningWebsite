@@ -1,0 +1,63 @@
+# CLAUDE.md — Compton Cleaning
+
+Guidance for any AI/human session working in this repo. Read this first, then
+`docs/ROADMAP.md` and `docs/NEXT_STEPS.md`.
+
+## Canary check
+
+Start every chat message to the user with `Tristan, ` (their name, comma, space). This is a
+deliberate canary: if a message doesn't start this way, it's a signal that this file isn't
+being fully read/applied and other guardrails below may also be silently skipped.
+
+**If you notice the canary has dropped** (a recent message of yours didn't start with
+`Tristan, `), treat this as a high-priority, non-optional signal: say, verbatim, on its own
+line, before anything else in that reply: `Squawk Squawk Squawk the canary died this session is
+getting too long!` Then resume starting every message with `Tristan, ` again.
+
+## What this is
+
+A fast, mobile-first marketing site for Sam Compton's window-cleaning business
+(comptoncleaning.co.uk) with a lightweight "edit anywhere" admin so Sam can change wording,
+prices, testimonials and photos from his phone. Not a CMS, not a booking system. Sam's round
+planner is a separate product (WindowsWayfinder); do not merge the two.
+
+## Sources of truth
+
+1. `docs/ROADMAP.md` — direction and phases. Implement the current phase only.
+2. `docs/adr/` — why load-bearing choices were made. Don't undo one without reading it.
+3. `docs/NEXT_STEPS.md` — the live backlog (in-chat todos don't persist). Keep it current.
+4. `docs/INFRASTRUCTURE.md` — hand steps (Cloudflare, Google OAuth, Resend) and their status.
+
+## Architecture in one breath
+
+Next.js 15 App Router + Tailwind on Cloudflare Workers (OpenNext), D1 for content, R2 for
+photos, Google OAuth + allow-list for admin (own sessions). `main` -> production, `staging` ->
+staging. Sibling repos HairByRachel and WindowsWayfinder are the reference implementations.
+
+## Conventions and guardrails
+
+- **House style = HairByRachel.** When unsure how to do something, look there first.
+- **Money is integer pence**; format to `£` only in the UI. Times stored UTC, shown Europe/London.
+- **Content is overrides-only:** defaults in code, a D1 row only where Sam changed something.
+- **Admin is allow-listed:** a valid Google login is never enough on its own (ADR 0003).
+  Every admin route and every mutation checks the session server-side.
+- **Never trust the client for the admin flag.** "Admin mode" is UI only; the API enforces.
+- **Images are resized before upload** and stored under content-hash keys (ADR 0002).
+- Secrets are Worker secrets, never committed. After `wrangler secret put`, verify the value is
+  non-empty (an empty secret looks present).
+- Mobile-first: design and test at phone width first. No sound effects, ever.
+- Respect `prefers-reduced-motion` for the squeegee bar, slider and glass effects.
+- Don't claim trust badges (insured, cover amount) in copy until Sam supplies proof.
+- Never name a competitor in code, docs or commits.
+- Proprietary, all rights reserved; don't paste in GPL/AGPL code.
+- Keep docs/ADRs current instead of explaining decisions in code comments.
+
+## Delivery
+
+Build on `staging`, verify on the wire, then fast-forward `main`. CI (`typecheck`, `test`,
+`audit`) runs on push and PR; `deploy.yml` triggers on push only, never on `pull_request`.
+Flag anything not yet checked on a real phone.
+
+## Not yet done
+
+Everything. See `docs/NEXT_STEPS.md`.

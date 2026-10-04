@@ -1,0 +1,63 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	// Built by `opennextjs-cloudflare build` into .open-next/ - see package.json scripts.
+	"main": ".open-next/worker.js",
+	"name": "compton-cleaning",
+	"compatibility_date": "2026-07-22",
+	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+	// Sam's account, NOT Tristan's own (33c912ad...). Not a secret. Pinned here so a deploy
+	// from Tristan's machine can never land on the wrong account.
+	"account_id": "f63f844d70738925fc7fb251893122cc",
+	"observability": { "enabled": true, "head_sampling_rate": 1 },
+	"assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+	"services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "compton-cleaning" }],
+	"vars": {
+		"APP_ENV": "production",
+		"SITE_URL": "https://comptoncleaning.co.uk"
+	},
+	// TODO(NEXT_STEPS): replace the placeholder database_id after
+	//   wrangler d1 create compton-cleaning
+	// It is only a real id that matters for remote/deployed use; local dev ignores it.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "compton-cleaning",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "migrations"
+		}
+	],
+	// Create first: wrangler r2 bucket create compton-cleaning-cache
+	//               wrangler r2 bucket create compton-cleaning-images
+	"r2_buckets": [
+		{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "compton-cleaning-cache" },
+		{ "binding": "SITE_IMAGES", "bucket_name": "compton-cleaning-images" }
+	],
+	"env": {
+		"staging": {
+			"name": "compton-cleaning-staging",
+			// WARNING: env.staging does NOT inherit these - everything below is re-declared on
+			// purpose. A missing entry means staging silently uses the production resource.
+			"account_id": "f63f844d70738925fc7fb251893122cc",
+			"observability": { "enabled": true, "head_sampling_rate": 1 },
+			"vars": {
+				"APP_ENV": "staging",
+				// TODO: set to the real staging URL once the Worker exists, then add it as a
+				// redirect URI in the Google OAuth client.
+				"SITE_URL": "https://compton-cleaning-staging.REPLACE-ME.workers.dev"
+			},
+			"services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "compton-cleaning-staging" }],
+			"d1_databases": [
+				{
+					"binding": "DB",
+					"database_name": "compton-cleaning-staging",
+					"database_id": "00000000-0000-0000-0000-000000000000",
+					"migrations_dir": "migrations"
+				}
+			],
+			"r2_buckets": [
+				{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "compton-cleaning-cache-staging" },
+				{ "binding": "SITE_IMAGES", "bucket_name": "compton-cleaning-images-staging" }
+			]
+		}
+	}
+}
