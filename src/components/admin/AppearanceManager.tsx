@@ -34,6 +34,7 @@ export function AppearanceManager({
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [picked, setPicked] = useState<File | null>(null);
   const [colour, setColour] = useState(heroColour ?? DEFAULT_COLOUR);
+  const [dragging, setDragging] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const background = heroColour ?? DEFAULT_COLOUR;
@@ -107,9 +108,36 @@ export function AppearanceManager({
             e.target.value = '';
           }}
         />
-        <button type="button" className={`${btn} mt-4 w-full`} disabled={pending} onClick={() => fileInput.current?.click()}>
-          Upload a new logo
-        </button>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Upload a new logo: drop an image here or press to choose one"
+          onClick={() => !pending && fileInput.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              fileInput.current?.click();
+            }
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragging(false);
+            const f = e.dataTransfer.files?.[0];
+            if (!f || pending) return;
+            if (f.type.startsWith('image/')) setPicked(f);
+            else setMessage({ ok: false, text: 'That is not an image. Drop a PNG, JPG or WebP.' });
+          }}
+          className={`mt-4 cursor-pointer rounded-xl border-2 border-dashed px-4 py-6 text-center text-sm font-bold ${
+            dragging ? 'border-brand-deep bg-brand/10 text-brand-deep' : 'border-brand-deep/40 text-brand-deep'
+          }`}
+        >
+          {dragging ? 'Drop it here' : 'Upload a new logo: drag an image here, or tap to choose one'}
+        </div>
         <p className="mt-2 text-xs text-ink/60">
           PNG, JPG or WebP. A white logo on a transparent background looks best on the coloured header.
         </p>
