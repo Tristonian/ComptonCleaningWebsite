@@ -31,6 +31,8 @@
 	"env": {
 		"staging": {
 			"name": "compton-cleaning-staging",
+			// Custom domain, managed from here (wrangler creates the DNS record + certificate).
+			"routes": [{ "pattern": "staging.comptoncleaning.co.uk", "custom_domain": true }],
 			// WARNING: env.staging does NOT inherit these - everything below is re-declared on
 			// purpose. A missing entry means staging silently uses the production resource.
 			"account_id": "f63f844d70738925fc7fb251893122cc",

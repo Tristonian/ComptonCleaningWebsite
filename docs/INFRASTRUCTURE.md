@@ -20,7 +20,9 @@ Things that cannot be done from code. Tick them off; record real values (never s
 - [x] workers.dev subdomain registered: `comptoncleaning`.
 - [x] **Staging Worker deployed**: https://compton-cleaning-staging.comptoncleaning.workers.dev
       Migration 0001 applied; four secrets set (values verified non-empty through the live Worker).
-- [ ] Attach custom domain `staging.comptoncleaning.co.uk` to the staging Worker (dashboard:
+- [x] Custom domain `staging.comptoncleaning.co.uk` attached via `routes` in wrangler.jsonc (workers.dev is
+      now OFF for staging). Verified 200, EN + CY, Secure cookie. Original dashboard instructions:
+      Attach custom domain `staging.comptoncleaning.co.uk` to the staging Worker (dashboard:
       Workers & Pages -> compton-cleaning-staging -> Settings -> Domains & Routes -> Add -> Custom
       domain). wrangler's login token cannot edit DNS, so this is a dashboard step.
 - [ ] Production: migrate `compton-cleaning`, set the same four secrets (NEW SESSION_SECRET),
