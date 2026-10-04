@@ -7,13 +7,13 @@ import { MAX_PHOTO_BYTES } from '@/lib/blocks-shared';
  * Never upscales.
  */
 
-const EDGES = [1600, 1200, 900] as const;
 const QUALITIES = [0.82, 0.7, 0.55] as const;
 const ALLOWED = ['image/png', 'image/jpeg', 'image/webp'];
 
 export class PhotoError extends Error {}
 
-export async function shrinkPhoto(file: File): Promise<{ file: File; width: number; height: number }> {
+/** `maxEdge` is the longest side in px: 1600 for page photos, 256 for service icons. */
+export async function shrinkPhoto(file: File, maxEdge = 1600): Promise<{ file: File; width: number; height: number }> {
   if (!ALLOWED.includes(file.type)) {
     throw new PhotoError(
       file.type === 'image/svg+xml'
@@ -28,7 +28,7 @@ export async function shrinkPhoto(file: File): Promise<{ file: File; width: numb
     throw new PhotoError(`${file.name || 'That image'} could not be read.`);
   }
   try {
-    for (const edge of EDGES) {
+    for (const edge of [1, 0.75, 0.5].map((k) => Math.max(1, Math.round(maxEdge * k)))) {
       const k = Math.min(1, edge / Math.max(bitmap.width, bitmap.height));
       const width = Math.max(1, Math.round(bitmap.width * k));
       const height = Math.max(1, Math.round(bitmap.height * k));

@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEditMode } from '@/components/EditMode';
-import { ZONES, blockText, type Block, type ZoneId } from '@/lib/blocks-shared';
+import { MAX_PHOTO_BYTES, ZONES, blockText, type Block, type ZoneId } from '@/lib/blocks-shared';
 import { PhotoError, shrinkPhoto } from '@/lib/photo-resize';
 import {
   addPhotoBlockAction,
@@ -24,7 +24,35 @@ import {
 const MOVE_ID = 'application/x-compton-block';
 const BIG = 1_000_000; // "the end" for placeBlock, which clamps
 
-export function BlockZone({ zone, blocks, compact = false }: { zone: ZoneId; blocks: Block[]; compact?: boolean }) {
+/**
+ * GIFs go up untouched (re-encoding would flatten the animation), so the server's size cap applies to
+ * the file as chosen; every other type is shrunk in the browser first.
+ */
+async function prepare(file: File): Promise<{ file: File; width: number; height: number }> {
+  if (file.type !== 'image/gif') return shrinkPhoto(file);
+  if (file.size > MAX_PHOTO_BYTES) throw new PhotoError(`${file.name} is over 1.5 MB. Shrink or shorten the GIF and try again.`);
+  const bmp = await createImageBitmap(file);
+  const size = { file, width: bmp.width, height: bmp.height };
+  bmp.close();
+  return size;
+}
+
+const STATIC_ORDER: string[] = ZONES.map((z) => z.id);
+
+export function BlockZone({
+  zone,
+  blocks,
+  compact = false,
+  order = STATIC_ORDER,
+  label: labelOverride,
+}: {
+  zone: ZoneId;
+  blocks: Block[];
+  compact?: boolean;
+  /** Every zone top to bottom (custom services included), for the up/down buttons at a zone's ends. */
+  order?: string[];
+  label?: string;
+}) {
   const { editing, locale } = useEditMode();
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -37,7 +65,7 @@ export function BlockZone({ zone, blocks, compact = false }: { zone: ZoneId; blo
 
   if (!editing && blocks.length === 0) return null;
 
-  const label = ZONES.find((z) => z.id === zone)?.label ?? zone;
+  const label = labelOverride ?? ZONES.find((z) => z.id === zone)?.label ?? zone;
 
   async function run(what: string, fn: () => Promise<{ ok: boolean; error?: string }>) {
     setBusy(what);
@@ -61,7 +89,7 @@ export function BlockZone({ zone, blocks, compact = false }: { zone: ZoneId; blo
     for (let i = 0; i < images.length; i++) {
       setBusy(`Uploading photo ${i + 1} of ${images.length}…`);
       try {
-        const small = await shrinkPhoto(images[i]);
+        const small = await prepare(images[i]);
         const body = new FormData();
         body.set('file', small.file);
         body.set('zone', zone);
@@ -89,14 +117,14 @@ export function BlockZone({ zone, blocks, compact = false }: { zone: ZoneId; blo
   }
 
   function move(b: Block, i: number, dir: -1 | 1) {
-    const z = ZONES.findIndex((x) => x.id === zone);
+    const z = order.indexOf(zone);
     if (dir === -1 && i === 0) {
       if (z === 0) return;
-      return run('move', () => placeBlockAction(b.id, ZONES[z - 1].id, BIG));
+      return run('move', () => placeBlockAction(b.id, order[z - 1], BIG));
     }
     if (dir === 1 && i === blocks.length - 1) {
-      if (z === ZONES.length - 1) return;
-      return run('move', () => placeBlockAction(b.id, ZONES[z + 1].id, 0));
+      if (z === order.length - 1) return;
+      return run('move', () => placeBlockAction(b.id, order[z + 1], 0));
     }
     // Index is in "list as it is now" terms: up = before the previous item, down = after the next one.
     return run('move', () => placeBlockAction(b.id, zone, dir === -1 ? i - 1 : i + 2));
@@ -142,7 +170,7 @@ export function BlockZone({ zone, blocks, compact = false }: { zone: ZoneId; blo
               className={`relative ${editing ? 'cursor-grab rounded-xl ring-1 ring-ink/20 active:cursor-grabbing' : ''}`}
             >
               {b.kind === 'image' && b.hash ? (
-                <figure>
+                <figure className="flex flex-col items-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={`/img/${b.hash}`}
@@ -151,7 +179,7 @@ export function BlockZone({ zone, blocks, compact = false }: { zone: ZoneId; blo
                     height={b.height ?? undefined}
                     loading="lazy"
                     draggable={false}
-                    className="h-auto w-full rounded-2xl"
+                    className="h-auto w-auto max-w-full rounded-2xl"
                   />
                   {blockText(b, locale) && (
                     <figcaption className="mt-2 text-sm text-ink/70">{blockText(b, locale)}</figcaption>
@@ -246,7 +274,7 @@ export function BlockZone({ zone, blocks, compact = false }: { zone: ZoneId; blo
           <input
             ref={files}
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept="image/png,image/jpeg,image/webp,image/gif"
             multiple
             className="sr-only"
             onChange={(e) => {

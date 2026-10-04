@@ -202,6 +202,8 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
       pencil on -> each zone (under intro/Services/Prices/Reviews) shows Add photos (several at once, or drop files),
       Add text, drag to arrange, up/down buttons, edit caption/text per language, delete. Not done: two-up photo
       layouts, reordering the built-in sections, more zones, touch drag.
+      Also built: add/edit/move/delete your own services (e.g. Pressure washing), two zones per service card
+      (under title / under text; GIFs allowed, 1.5 MB), and hide/show sections (migration 0008). UNVERIFIED on a phone.
 - [x] **Enquiry inbox in /admin**: built (see above). Still to add: mark-as-spam/archive, search, a customers list page,
       unread badge on the nav, reply templates editable in the admin.
 - [ ] Production: `db:migrate -- --branch production`, secrets (`DATABASE_URL`, `RESEND_API`, `ENQUIRY_TO`,

@@ -28,3 +28,17 @@ so this must stay small.
 - Not pixel-free: blocks sit in fixed zones, in a single column. Cheaper, mobile-safe and cannot produce a broken
   layout; revisit (more zones, two-up photos, reordering whole sections) only if Sam hits the wall.
 - Native HTML drag is mouse-only; touch uses the buttons. A pointer-events drag can replace it later.
+
+## Addendum (same day): services, GIFs, hiding
+
+- **Services Sam adds himself** (`custom_services`, migration 0008): a card with title and description (per language,
+  Welsh falls back to English), shown after the built-in cards, movable (earlier/later) and deletable.
+- **Two zones per service card**, built-in or added: under the title (`service-x-top`, `svc-<id>-top`) and under the
+  text (`service-x`, `svc-<id>`). So "Pressure washing / GIF / text" is just a GIF in the top zone. A custom service's
+  zones only exist while it does (`zoneExists`), and deleting it deletes its blocks and orphaned photos.
+- **GIFs** are accepted as photo blocks and uploaded untouched (re-encoding would flatten the animation), so the
+  1.5 MB cap applies to the file as chosen. Blocks display at natural size capped to the card, so a small silhouette
+  GIF stays small. Other types are still shrunk in the browser.
+- **Hiding** (`site_settings.hidden_sections`, JSON array): any section, each service card and each added service can be
+  hidden and shown again; hiding only stops it displaying. Contact is not hideable. Nav links to a hidden section are
+  dropped. A hidden section shows as a "Hidden: X / Show" stub in pencil mode.

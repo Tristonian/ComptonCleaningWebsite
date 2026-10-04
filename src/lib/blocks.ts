@@ -52,10 +52,18 @@ const audit = (by: string, action: string, detail: unknown) => ({
   params: [by, action, JSON.stringify(detail)],
 });
 
+/** A custom service's zone only exists while the service does. */
+async function zoneExists(db: Db, zone: unknown): Promise<boolean> {
+  if (!isZone(zone)) return false;
+  const m = /^svc-(\d+)(?:-top)?$/.exec(zone);
+  if (!m) return true;
+  return (await db.query('SELECT 1 FROM custom_services WHERE id = $1', [m[1]])).length > 0;
+}
+
 const nextPosition = '(SELECT COALESCE(MAX(position), 0) + 1 FROM page_blocks WHERE zone = $1)';
 
 export async function addTextBlock(args: { zone: unknown; text?: string; by: string }, db: Db = getDb()): Promise<Result> {
-  if (!isZone(args.zone)) return { ok: false, error: 'Unknown place on the page.' };
+  if (!(await zoneExists(db, args.zone))) return { ok: false, error: 'Unknown place on the page.' };
   try {
     await db.transaction([
       {
@@ -75,7 +83,7 @@ export async function addImageBlock(
   args: { zone: unknown; hash: string; width: number; height: number; contentType: string; by: string },
   db: Db = getDb(),
 ): Promise<Result> {
-  if (!isZone(args.zone)) return { ok: false, error: 'Unknown place on the page.' };
+  if (!(await zoneExists(db, args.zone))) return { ok: false, error: 'Unknown place on the page.' };
   if (!isImageHash(args.hash)) return { ok: false, error: 'That is not a valid image.' };
   try {
     await db.transaction([
@@ -130,7 +138,7 @@ export async function placeBlock(
   args: { id: unknown; zone: unknown; index: unknown; by: string },
   db: Db = getDb(),
 ): Promise<Result> {
-  if (!isZone(args.zone)) return { ok: false, error: 'Unknown place on the page.' };
+  if (!(await zoneExists(db, args.zone))) return { ok: false, error: 'Unknown place on the page.' };
   if (!/^\d+$/.test(String(args.id))) return { ok: false, error: 'Unknown block.' };
   const id = String(args.id);
   const want = Number(args.index);
