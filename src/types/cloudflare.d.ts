@@ -3,7 +3,6 @@
 interface CloudflareEnv {
   DB: D1Database;
   SITE_IMAGES: R2Bucket;
-  NEXT_INC_CACHE_R2_BUCKET: R2Bucket;
   ASSETS: Fetcher;
   APP_ENV?: string;
   SITE_URL?: string;

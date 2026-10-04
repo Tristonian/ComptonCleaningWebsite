@@ -22,7 +22,10 @@ a one-man window-cleaning site. Not Pages: no Cron Triggers, older adapter.
 - No `VERCEL_ENV`; use an explicit `APP_ENV` var per Worker.
 - A Worker secret can exist with an **empty value** and `wrangler secret list` will not say
   so (LesK incident). Check values when a binding "looks missing".
-- On-demand revalidation needs an R2 incremental cache bucket per environment.
+- On-demand revalidation needs an R2 incremental cache bucket per environment. **Not used here**
+  (2026-10-04): every route is dynamic, nothing calls `revalidatePath`, and populating the cache
+  failed during the first deploy. `compton-cleaning-cache` and `-cache-staging` buckets exist but
+  are unused; delete them or re-add the cache if static revalidated pages ever appear.
 
 ## Consequences
 

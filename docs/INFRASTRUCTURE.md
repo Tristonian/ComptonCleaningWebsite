@@ -11,12 +11,20 @@ Things that cannot be done from code. Tick them off; record real values (never s
   wrong one.
 - [x] `comptoncleaning.co.uk` is already a zone on Sam's account: status **active**, Free
       plan, zone id `5994f113498e31993641a84555d8ff66`. No nameserver change needed.
-- [ ] Review DNS records (is there email/MX on the domain? where does the apex point now?).
-- [ ] Enable R2 (currently error 10042 "enable R2 through the dashboard"; needs a card on
-      Sam's account, stays free within the allowance).
+- [x] DNS reviewed: zero records. No email on the domain, nothing live.
+- [x] R2 enabled.
 - [ ] Create API token (Workers Scripts:Edit, D1:Edit, R2:Edit, DNS:Edit on the zone).
       Store in GitHub secrets as `CLOUDFLARE_API_TOKEN`, plus `CLOUDFLARE_ACCOUNT_ID`.
-- [ ] Create resources, prod and staging: Worker, D1 database, R2 images bucket, R2 cache bucket.
+- [x] Created 2026-10-04 (weur): D1 `compton-cleaning` (db19280d-...) and `compton-cleaning-staging`
+      (884d35e4-...); R2 `compton-cleaning-images`, `-images-staging` (+ unused `-cache`, `-cache-staging`).
+- [x] workers.dev subdomain registered: `comptoncleaning`.
+- [x] **Staging Worker deployed**: https://compton-cleaning-staging.comptoncleaning.workers.dev
+      Migration 0001 applied; four secrets set (values verified non-empty through the live Worker).
+- [ ] Attach custom domain `staging.comptoncleaning.co.uk` to the staging Worker (dashboard:
+      Workers & Pages -> compton-cleaning-staging -> Settings -> Domains & Routes -> Add -> Custom
+      domain). wrangler's login token cannot edit DNS, so this is a dashboard step.
+- [ ] Production: migrate `compton-cleaning`, set the same four secrets (NEW SESSION_SECRET),
+      deploy, attach `comptoncleaning.co.uk` + `www` (redirect www to apex).
 
 ## 2. Google sign-in (admin login, ADR 0003)
 
@@ -30,7 +38,7 @@ project is a decision to make (see ROADMAP open questions).
   - `https://comptoncleaning.co.uk/api/auth/google/callback`
   - `https://<staging-worker>.workers.dev/api/auth/google/callback`
   - `http://localhost:3000/api/auth/google/callback`
-- [ ] Set Worker secrets per environment (`wrangler secret put`, then confirm each is
+- [x] Staging secrets set. [ ] Production secrets still to set. Per environment (`wrangler secret put`, then confirm each is
       non-empty): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_ALLOWED_EMAILS`
       (Sam's Gmail, Tristan's), `SESSION_SECRET`.
 

@@ -15,21 +15,17 @@
 		"APP_ENV": "production",
 		"SITE_URL": "https://comptoncleaning.co.uk"
 	},
-	// TODO(NEXT_STEPS): replace the placeholder database_id after
-	//   wrangler d1 create compton-cleaning
-	// It is only a real id that matters for remote/deployed use; local dev ignores it.
+	// Created 2026-10-04 on Sam's account (location hint weur). Ids are not secrets.
 	"d1_databases": [
 		{
 			"binding": "DB",
 			"database_name": "compton-cleaning",
-			"database_id": "00000000-0000-0000-0000-000000000000",
+			"database_id": "db19280d-cbbc-4987-a2e9-36d37ce770dd",
 			"migrations_dir": "migrations"
 		}
 	],
-	// Create first: wrangler r2 bucket create compton-cleaning-cache
-	//               wrangler r2 bucket create compton-cleaning-images
+	// Photos only (the next.js cache bucket was dropped: see open-next.config.ts).
 	"r2_buckets": [
-		{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "compton-cleaning-cache" },
 		{ "binding": "SITE_IMAGES", "bucket_name": "compton-cleaning-images" }
 	],
 	"env": {
@@ -41,21 +37,19 @@
 			"observability": { "enabled": true, "head_sampling_rate": 1 },
 			"vars": {
 				"APP_ENV": "staging",
-				// TODO: set to the real staging URL once the Worker exists, then add it as a
-				// redirect URI in the Google OAuth client.
-				"SITE_URL": "https://compton-cleaning-staging.REPLACE-ME.workers.dev"
+				// Must also be registered as a redirect URI in the Google OAuth client.
+				"SITE_URL": "https://staging.comptoncleaning.co.uk"
 			},
 			"services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "compton-cleaning-staging" }],
 			"d1_databases": [
 				{
 					"binding": "DB",
 					"database_name": "compton-cleaning-staging",
-					"database_id": "00000000-0000-0000-0000-000000000000",
+					"database_id": "884d35e4-fd77-4766-9184-651a41b24e1b",
 					"migrations_dir": "migrations"
 				}
 			],
 			"r2_buckets": [
-				{ "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "compton-cleaning-cache-staging" },
 				{ "binding": "SITE_IMAGES", "bucket_name": "compton-cleaning-images-staging" }
 			]
 		}
