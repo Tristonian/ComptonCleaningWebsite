@@ -2,6 +2,7 @@ import 'server-only';
 import { getDb, type Db } from '@/lib/db';
 import { normalisePhone } from '@/lib/phone';
 import type { ImportRow } from '@/lib/customers-csv';
+import { hashesForCustomer, unreferenced } from '@/lib/job-photos';
 
 /**
  * Sam's customers as a working list (ADR 0008): price, frequency, rounds, and what is due or owing.
@@ -293,14 +294,21 @@ export async function updateCustomer(id: unknown, input: CustomerInput, by: stri
  * Delete a customer for good (they asked). Their jobs, extras, photo rows and round places go with
  * them, and enquiries that pointed at them simply lose the link. The audit row records only the id.
  */
-export async function deleteCustomer(id: unknown, by: string, db: Db = getDb()): Promise<Result> {
+export async function deleteCustomer(
+  id: unknown,
+  by: string,
+  db: Db = getDb(),
+): Promise<{ ok: true; orphans: string[] } | { ok: false; error: string }> {
   if (!/^\d+$/.test(String(id))) return { ok: false, error: 'Unknown customer.' };
   try {
     const a = audit(by, 'customer_deleted', { id: String(id) });
     const found = await db.query('SELECT id FROM customers WHERE id = $1', [id]);
     if (found.length === 0) return { ok: false, error: 'That customer no longer exists.' };
+    // Collect the photo hashes first (the rows cascade away), then report which are now unused so the
+    // caller can remove them from R2 after the delete has really happened.
+    const hashes = await hashesForCustomer(id, db);
     await db.transaction([{ text: 'DELETE FROM customers WHERE id = $1', params: [id] }, a]);
-    return { ok: true };
+    return { ok: true, orphans: await unreferenced(hashes, db) };
   } catch (err) {
     console.error('[customers] deleteCustomer failed:', err);
     return { ok: false, error: 'Could not delete that. Try again.' };

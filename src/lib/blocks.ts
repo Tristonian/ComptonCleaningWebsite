@@ -192,7 +192,9 @@ export async function deleteBlock(
     const left = await db.query('SELECT 1 FROM page_blocks WHERE image_hash = $1 LIMIT 1', [hash]);
     if (left.length > 0) return { ok: true, orphanHash: null };
     await db.query("DELETE FROM site_images WHERE hash = $1 AND kind = 'photo'", [hash]);
-    return { ok: true, orphanHash: hash };
+    // The same bytes may also be a visit photo: keep the R2 object while one still points at it.
+    const onVisit = await db.query('SELECT 1 FROM job_photos WHERE hash = $1 LIMIT 1', [hash]);
+    return { ok: true, orphanHash: onVisit.length > 0 ? null : hash };
   } catch (err) {
     console.error('[blocks] deleteBlock failed:', err);
     return { ok: false, error: 'Could not delete that.' };

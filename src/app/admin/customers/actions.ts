@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { createCustomer, createRound, deleteCustomer, importCustomers, updateCustomer, type CustomerInput } from '@/lib/customers';
+import { removePhotoObjects } from '@/lib/photo-store';
 import { parseCustomersCsv } from '@/lib/customers-csv';
 
 /**
@@ -60,6 +61,7 @@ export async function deleteCustomerAction(form: FormData): Promise<void> {
     redirect(withFlash(`/admin/customers/${text(form, 'id')}`, 'error', 'Type delete to confirm.'));
   }
   const r = await deleteCustomer(text(form, 'id'), a.email, getDb());
+  if (r.ok) await removePhotoObjects(r.orphans);
   redirect(withFlash('/admin/customers', r.ok ? 'ok' : 'error', r.ok ? 'Customer deleted.' : r.error));
 }
 

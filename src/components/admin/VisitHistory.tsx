@@ -1,4 +1,6 @@
 import type { JobRow } from '@/lib/jobs';
+import { VisitPhotos } from '@/components/admin/VisitPhotos';
+import { MAX_JOB_PHOTOS } from '@/lib/job-photos';
 import { DeleteVisitForm, MarkPaidForm, VisitForm } from '@/components/admin/VisitForm';
 
 const pounds = (p: number) => `£${(p / 100).toFixed(p % 100 === 0 ? 0 : 2)}`;
@@ -55,6 +57,7 @@ export function VisitHistory({
               </p>
             )}
             {j.notes && <p className="mt-0.5 whitespace-pre-line text-sm text-ink/70">{j.notes}</p>}
+            <VisitPhotos jobId={j.id} photos={j.photos} max={MAX_JOB_PHOTOS} />
             {j.status === 'done' && !j.paid && (
               <div className="mt-2">
                 <MarkPaidForm jobId={j.id} methods={methods} back={back} preferred={preferredPayment} />

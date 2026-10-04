@@ -1,6 +1,7 @@
 import 'server-only';
 import { getDb, type Db } from '@/lib/db';
 import { poundsToPence, todayLondon, type Result } from '@/lib/customers';
+import { hashesForJob, photosByJob, unreferenced, type JobPhoto } from '@/lib/job-photos';
 
 /**
  * Visits (ADR 0008): one `jobs` row per clean, marked Done or Missed, with extras and how it was paid.
@@ -34,6 +35,7 @@ export type JobRow = {
   paid: boolean;
   notes: string;
   extras: { id: string; label: string; pricePence: number }[];
+  photos: JobPhoto[];
   totalPence: number;
 };
 
@@ -170,14 +172,19 @@ export async function markPaid(jobId: unknown, method: unknown, by: string, db: 
   }
 }
 
-export async function deleteJob(jobId: unknown, by: string, db: Db = getDb()): Promise<Result> {
+export async function deleteJob(
+  jobId: unknown,
+  by: string,
+  db: Db = getDb(),
+): Promise<{ ok: true; orphans: string[] } | { ok: false; error: string }> {
   if (!/^\d+$/.test(String(jobId))) return { ok: false, error: 'Unknown visit.' };
   try {
+    const hashes = await hashesForJob(jobId, db);
     const rows = await db.query('DELETE FROM jobs WHERE id = $1 RETURNING id', [jobId]);
     if (rows.length === 0) return { ok: false, error: 'That visit no longer exists.' };
     const a = audit(by, 'job_deleted', { id: String(jobId) });
     await db.query(a.text, a.params);
-    return { ok: true };
+    return { ok: true, orphans: await unreferenced(hashes, db) };
   } catch (err) {
     console.error('[jobs] deleteJob failed:', err);
     return { ok: false, error: 'Could not delete that. Try again.' };
@@ -205,6 +212,7 @@ export async function listJobs(customerId: unknown, db: Db = getDb(), limit = 10
        FROM jobs j WHERE j.customer_id = $1 ORDER BY j.done_on DESC, j.id DESC LIMIT $2`,
     [customerId, limit],
   );
+  const photos = await photosByJob(rows.map((r) => String(r.id)), db);
   return rows.map((r) => {
     const extras = (r.extras ?? []).map((e) => ({ id: String(e.id), label: e.label, pricePence: Number(e.price_pence) }));
     return {
@@ -216,6 +224,7 @@ export async function listJobs(customerId: unknown, db: Db = getDb(), limit = 10
       paid: r.paid,
       notes: r.notes,
       extras,
+      photos: photos.get(String(r.id)) ?? [],
       totalPence: Number(r.price_pence) + extras.reduce((s, e) => s + e.pricePence, 0),
     };
   });

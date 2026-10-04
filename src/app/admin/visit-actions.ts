@@ -3,6 +3,8 @@
 import { redirect } from 'next/navigation';
 import { getAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
+import { addJobPhoto, deleteJobPhoto, unreferenced } from '@/lib/job-photos';
+import { removePhotoObjects, storeUploadedPhoto } from '@/lib/photo-store';
 import { deleteJob, markPaid, recordJob, updateJob, type JobInput } from '@/lib/jobs';
 
 /**
@@ -65,5 +67,27 @@ export async function deleteVisitAction(form: FormData): Promise<void> {
   const back = backTo(form);
   if (form.get('confirm') !== 'on') redirect(flash(back, 'error', 'Tick the box to confirm the delete.'));
   const r = await deleteJob(text(form, 'jobId'), a.email, getDb());
+  if (r.ok) await removePhotoObjects(r.orphans);
   redirect(flash(back, r.ok ? 'ok' : 'error', r.ok ? 'Visit deleted.' : r.error));
+}
+
+/** Called from the client after it has shrunk the photo. Returns a result instead of redirecting so several can go up in turn. */
+export async function addVisitPhotoAction(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  const a = await getAdmin();
+  if (!a) return { ok: false, error: 'Not signed in.' };
+  const stored = await storeUploadedPhoto(formData);
+  if (!stored.ok) return stored;
+  const r = await addJobPhoto({ jobId: formData.get('jobId'), hash: stored.hash, width: stored.width, height: stored.height, by: a.email }, getDb());
+  // The object was written before we knew the visit would take it; tidy it if nothing references it.
+  if (!r.ok) await removePhotoObjects(await unreferenced([stored.hash], getDb()));
+  return r;
+}
+
+export async function deleteVisitPhotoAction(photoId: string): Promise<{ ok: boolean; error?: string }> {
+  const a = await getAdmin();
+  if (!a) return { ok: false, error: 'Not signed in.' };
+  const r = await deleteJobPhoto(photoId, a.email, getDb());
+  if (!r.ok) return r;
+  await removePhotoObjects(r.orphans);
+  return { ok: true };
 }
