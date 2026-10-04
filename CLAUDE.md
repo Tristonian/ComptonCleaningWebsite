@@ -70,11 +70,10 @@ public site with a working contact form (Resend; `hello@` send/receive set up; l
 an `/admin` enquiry inbox (read, reply, notes, status, add as customer), and (session 3) logo upload with
 cropper and a header colour picker, a collapsing hero bar, photo/GIF/text blocks Sam adds and arranges from the pencil
 (ADR 0006), services he adds himself, hide/show for sections, editable contact-form drop-downs, a favicon and a
-privacy page. **Production is deployed** to https://comptoncleaning.co.uk (migrated 0001-0009) but its Worker
-secrets are NOT set yet: run `bash scripts/set-prod-secrets.sh`, then follow `docs/GO-LIVE.md`. Session 4 added rich-text
-body copy (ADR 0007, on production) and the work tracker in /admin (customers, rounds, visits, debts, map; ADR 0008,
-migration 0010), on **staging only**: production needs 0010 applied before the tracker is deployed there. Session 5 added weather (Open-Meteo) on the admin home and per round, and photos on a visit (ADR 0009), also staging only. Not yet done:
-real reviews, SEO (see ROADMAP), Templates. What is and is not verified
+privacy page. **Production is deployed** to https://comptoncleaning.co.uk (Worker `c157c645`; Tristan ran the secrets script, migrations 0010-0011 and the deploy on 2026-10-04, seven secrets are present; the migrations and Google login on production are not independently verified, see `docs/NEXT_STEPS.md`). Session 4 added rich-text
+body copy (ADR 0007) and the work tracker in /admin (customers, rounds, visits, debts, map; ADR 0008,
+migration 0010). Session 5 added weather (Open-Meteo) on the admin home and per round, and photos on a visit (ADR 0009). Session 6 added the Templates screen (ADR 0010, migration 0011). Not yet done:
+real reviews, SEO (see ROADMAP), SMSWorks. What is and is not verified
 (almost nothing is checked on a real phone yet) is in `docs/NEXT_STEPS.md`; read it before building on
 anything. Email setup and its gotchas: `docs/INFRASTRUCTURE.md` section 3.
 

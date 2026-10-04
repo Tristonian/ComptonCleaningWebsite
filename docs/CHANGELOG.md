@@ -2,6 +2,19 @@
 
 Newest first. Led by what changed for Sam, then the numbers and what is still untested.
 
+## 2026-10-04 (session 6): Templates, and the work tracker reaches production
+
+**For Sam**
+- **Templates** (`/admin/templates`, new ✉️ tab): every text and email he sends is listed. Tap one to switch it off or change the wording, or Reset to the original. Switching "Coming tomorrow" off removes that button from the customer list; the four enquiry replies (thanks, price, more info, booked) are the starting points on the reply form, and only switched-on ones are offered. Nothing is ever sent without him pressing send.
+- Texts and replies greet ALL-CAPS or lower-case first names tidily ("Hi Tristan").
+- **Production now has the work tracker, the Templates screen and its Worker secrets** (Tristan ran `set-prod-secrets.sh`, migrate and deploy by hand). Admin login on the live site should now work, but nobody has signed in there yet.
+
+**Under the hood:** ADR 0010; migration 0011 (`message_templates`); `src/lib/templates.ts`, `message-templates.ts` (registry), `components/admin/TemplateEditor.tsx`. Emails stay plain text (the reply form and mailer are plain text).
+
+**Numbers:** 223 tests pass in 29 files (6 new), typecheck and build clean. Staging Worker `debb7f44` (migrated through 0011); production Worker `c157c645`. `main` = `staging`, pushed.
+
+**Still untested:** Templates on a phone beyond Tristan switching "Coming tomorrow" off and seeing the button go; the six-tab bar's width on a small phone; editing a reply template and seeing it on a real enquiry; production migrations 0010 and 0011 were run by Tristan and not independently probed; Sam's own Google login on production.
+
 ## 2026-10-04 (session 5): weather and photos on visits
 
 **For Sam**
