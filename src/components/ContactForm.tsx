@@ -2,9 +2,12 @@
 
 import dynamic from 'next/dynamic';
 import { useActionState, useRef, useState, type FormEvent } from 'react';
+import { ContactSent, type SentSnapshot } from '@/components/ContactSent';
 import { Ed } from '@/components/Ed';
+import { useEditMode } from '@/components/EditMode';
+import { SERVICES, SOURCES, labelOf } from '@/lib/enquiry-options';
 import { sendEnquiry, type ContactState } from '@/app/contact-actions';
-import { normaliseEmail, normalisePhone, normalisePostcode } from '@/lib/enquiry';
+import { formatPhone, normaliseEmail, normalisePhone, normalisePostcode } from '@/lib/enquiry';
 import { isPlausibleUkPoint, type LatLng } from '@/lib/geo';
 
 // Loaded only when a pin is first shown: the map library is large.
@@ -24,6 +27,8 @@ type Locating = 'idle' | 'working' | 'denied' | 'failed';
  */
 export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
   const [state, action, pending] = useActionState<ContactState, FormData>(sendEnquiry, { status: 'idle' });
+  const { locale } = useEditMode();
+  const [service, setService] = useState('');
   const [address, setAddress] = useState('');
   const [postcode, setPostcode] = useState('');
   const [phone, setPhone] = useState('');
@@ -39,16 +44,14 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
   const [locating, setLocating] = useState<Locating>('idle');
   // What "Use my location" or a moved pin filled in, waiting for the visitor to say "yes, that's right".
   const [detected, setDetected] = useState<{ street: string; postcode: string } | null>(null);
+  // A copy of what they submitted, so the thank-you can show it back instead of hiding it.
+  const [snapshot, setSnapshot] = useState<SentSnapshot | null>(null);
   const lookedUp = useRef('');
   const mapBox = useRef<HTMLDivElement>(null);
   const addressInput = useRef<HTMLInputElement>(null);
 
   if (state.status === 'sent') {
-    return (
-      <Ed id="contact.form.thanks" as="p" className="rounded-xl bg-brand/10 p-4 font-semibold text-brand-deep">
-        {'Thanks, we’ll be in touch soon.'}
-      </Ed>
-    );
+    return <ContactSent snapshot={snapshot} mapboxToken={mapboxToken} />;
   }
 
   const mapShown = Boolean(point && mapboxToken && !mapBroken);
@@ -150,7 +153,7 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
   /** Stop the send, and say why, if anything is wrong or the pin is unconfirmed. */
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     setAttempted(true);
-    const invalid = phoneBad || emailBad || postcodeBad || postcodeUnknown || noContact;
+    const invalid = phoneBad || emailBad || postcodeBad || postcodeUnknown || noContact || !service;
     if (invalid) return e.preventDefault();
     if (detected) {
       // They have not said whether the address we found is right yet.
@@ -160,7 +163,24 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
     if (needsPin) {
       e.preventDefault();
       mapBox.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      return;
     }
+    // It is going through: keep a copy to show back to them afterwards.
+    const f = new FormData(e.currentTarget);
+    const text = (k: string) => String(f.get(k) ?? '').trim();
+    const lat = Number(text('lat'));
+    const lng = Number(text('lng'));
+    setSnapshot({
+      name: text('name'),
+      service: labelOf(SERVICES, text('service'), locale),
+      source: labelOf(SOURCES, text('source'), locale),
+      address: text('address'),
+      postcode: normalisePostcode(text('postcode')) || text('postcode'),
+      phone: normalisePhone(text('phone')) ? formatPhone(normalisePhone(text('phone'))) : '',
+      email: normaliseEmail(text('email')),
+      notes: text('notes'),
+      pin: text('lat') && text('lng') && Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null,
+    });
   }
 
   return (
@@ -168,6 +188,42 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
       <label className="flex flex-col gap-1 text-sm font-semibold">
         <Ed id="contact.form.name">Name</Ed>
         <input name="name" required maxLength={100} autoComplete="name" className={field} />
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm font-semibold">
+        <Ed id="contact.form.service">What service are you interested in?</Ed>
+        <select
+          name="service"
+          required
+          value={service}
+          onChange={(e) => setService(e.target.value)}
+          aria-invalid={attempted && !service ? true : undefined}
+          className={`${field} ${attempted && !service ? fieldBad : ''}`}
+        >
+          <option value="">{locale === 'cy' ? 'Dewiswch wasanaeth' : 'Choose a service'}</option>
+          {SERVICES.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o[locale]}
+            </option>
+          ))}
+        </select>
+      </label>
+      {attempted && !service && (
+        <Ed id="contact.form.service.error" as="p" className={errorText}>
+          Please choose the service you are interested in.
+        </Ed>
+      )}
+
+      <label className="flex flex-col gap-1 text-sm font-semibold">
+        <Ed id="contact.form.source">Where did you hear about us? (optional)</Ed>
+        <select name="source" defaultValue="" className={field}>
+          <option value="">{locale === 'cy' ? 'Dewiswch un' : 'Choose one'}</option>
+          {SOURCES.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o[locale]}
+            </option>
+          ))}
+        </select>
       </label>
 
       <button

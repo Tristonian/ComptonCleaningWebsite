@@ -32,6 +32,8 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
     name: form.get('name'),
     address: form.get('address'),
     postcode: form.get('postcode'),
+    service: form.get('service'),
+    source: form.get('source'),
     phone: form.get('phone'),
     email: form.get('email'),
     notes: form.get('notes'),

@@ -124,6 +124,15 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
   Likely free, key-less source to evaluate first: Open-Meteo (needs lat/lng, which the confirmed pin
   already gives us per customer); also consider the Met Office DataHub. Cache per area/day, call from the
   server, never from the browser.
+- **Referrals and review promos (like HairByRachel):** (1) "Referred by" asks for the referrer's **full name**; when
+  the new customer books/pays, both get a discount (record who referred whom; guard against self-referral
+  and name typos: match on the existing customer, confirm in the admin before the discount applies). (2) A
+  customer who leaves a Google review gets a small **promo code** (the review link is `REVIEW_URL`; Google
+  gives no API to verify a review, so it is honour-based or Sam ticks "review seen" in the admin and the code
+  is sent as a template email). Needs: customers table, referral link, promo codes (single-use, expiry), and
+  Sam approving each one. Read HairByRachel's referral and promo code first and reuse the shape.
+  The contact form's "Where did you hear about us" drop-down already records a `recommendation` source:
+  a follow-up question "who recommended you?" can feed this later.
 - **Template emails:** send and edit templated emails (confirmations, reminders, "we are on our way",
   review requests) from the admin. Reuse the Resend setup (`src/lib/mail.ts`, `hello@` for replies).
 - **Crossover with the HairByRachel /admin:** look at how Rachel's admin does appointments, templates and

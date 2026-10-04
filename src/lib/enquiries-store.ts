@@ -27,8 +27,8 @@ export async function storeEnquiry(
   }
 
   const [row] = await db.query<{ id: string }>(
-    `INSERT INTO enquiries (name, address, postcode, contact, phone, email, notes, locale, ip_hash, lat, lng)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+    `INSERT INTO enquiries (name, address, postcode, contact, phone, email, service, source, notes, locale, ip_hash, lat, lng)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id`,
     [
       input.name,
       input.address,
@@ -36,6 +36,8 @@ export async function storeEnquiry(
       [input.phone ? formatPhone(input.phone) : '', input.email].filter(Boolean).join(' / '),
       input.phone,
       input.email,
+      input.service,
+      input.source,
       input.notes,
       meta.locale,
       meta.ipHash,

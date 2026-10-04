@@ -8,6 +8,8 @@ const checked = checkEnquiry({
   postcode: 'bs161aa',
   phone: '07700 900123',
   email: 'jo@example.com',
+  service: 'window-cleaning',
+  source: 'google-maps',
   notes: 'Side gate\nDog "Rex"',
   lat: '51.5121',
   lng: '-2.5111',
@@ -39,8 +41,16 @@ describe('buildEnquiryEmail', () => {
     expect(e.text).toContain('Email: jo@example.com');
   });
 
+  it('says what they want and where they heard about us', () => {
+    const e = buildEnquiryEmail({ ...base, pinKind: 'pin', hasMapImage: true });
+    expect(e.html).toContain('<b>Wants:</b> Window cleaning');
+    expect(e.html).toContain('<b>Heard about us:</b> Google Maps');
+    expect(e.text).toContain('Service: Window cleaning');
+    expect(e.text).toContain('Heard about us: Google Maps');
+  });
+
   it('leaves out whichever of phone and email was not given', () => {
-    const only = checkEnquiry({ name: 'Jo', address: 'a', postcode: 'bs161aa', phone: '07700 900123' });
+    const only = checkEnquiry({ name: 'Jo', address: 'a', postcode: 'bs161aa', phone: '07700 900123', service: 'other' });
     if (!only.ok) throw new Error('fixture');
     const e = buildEnquiryEmail({ ...base, input: only.value, pinKind: 'none', hasMapImage: false });
     expect(e.html).not.toContain('Email:');

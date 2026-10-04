@@ -17,6 +17,8 @@ const checked = checkEnquiry({
   postcode: 'bs161aa',
   phone: '07700 900123',
   email: 'Jo@Example.com',
+  service: 'gutter-cleaning',
+  source: 'facebook',
   notes: 'Side gate',
   lat: '51.5121',
   lng: '-2.5111',
@@ -38,6 +40,12 @@ describe('storeEnquiry', () => {
     await storeEnquiry(db, input, { ipHash: 'p', locale: 'en' });
     const { rows } = await pg.query<{ contact: string; phone: string; email: string }>('SELECT contact, phone, email FROM enquiries');
     expect(rows).toEqual([{ contact: '07700 900123 / jo@example.com', phone: '+447700900123', email: 'jo@example.com' }]);
+  });
+
+  it('stores the service and where they heard about us', async () => {
+    await storeEnquiry(db, input, { ipHash: 's', locale: 'en' });
+    const { rows } = await pg.query<{ service: string; source: string }>('SELECT service, source FROM enquiries');
+    expect(rows).toEqual([{ service: 'gutter-cleaning', source: 'facebook' }]);
   });
 
   it('the database refuses a row with no way to reach the customer', async () => {

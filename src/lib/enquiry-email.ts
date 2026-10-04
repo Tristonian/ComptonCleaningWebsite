@@ -1,4 +1,5 @@
 import { formatPhone, type EnquiryInput } from './enquiry';
+import { SERVICES, SOURCES, labelOf } from './enquiry-options';
 
 export type PinKind = 'pin' | 'postcode' | 'none';
 
@@ -25,10 +26,14 @@ export function buildEnquiryEmail(args: {
 }): { subject: string; text: string; html: string } {
   const { input, mapUrl, directionsUrl, pinKind, hasMapImage } = args;
   const pinText = PIN_LABEL[pinKind];
+  const service = labelOf(SERVICES, input.service);
+  const source = labelOf(SOURCES, input.source);
 
   const notesText = input.notes ? `\nNotes:\n${input.notes}\n` : '';
   const text =
-    `Name: ${input.name}\nAddress: ${input.address}\nPostcode: ${input.postcode}\n` +
+    `Name: ${input.name}\nService: ${service}\n` +
+    (source ? `Heard about us: ${source}\n` : '') +
+    `Address: ${input.address}\nPostcode: ${input.postcode}\n` +
     (input.phone ? `Phone: ${formatPhone(input.phone)} (tap to call: tel:${input.phone})\n` : '') +
     (input.email ? `Email: ${input.email}\n` : '') +
     `\n${pinText}\nOpen in Google Maps: ${mapUrl}\nDirections: ${directionsUrl}\n${notesText}\nSent from the website contact form.`;
@@ -40,7 +45,9 @@ export function buildEnquiryEmail(args: {
 
   const html =
     `<div style="font:16px/1.5 Arial,sans-serif;color:#0f2131;max-width:640px">` +
-    `<p><b>Name:</b> ${esc(input.name)}<br><b>Address:</b> ${esc(input.address)}<br>` +
+    `<p><b>Name:</b> ${esc(input.name)}<br><b>Wants:</b> ${esc(service)}` +
+    (source ? `<br><b>Heard about us:</b> ${esc(source)}` : '') +
+    `<br><b>Address:</b> ${esc(input.address)}<br>` +
     `<b>Postcode:</b> ${esc(input.postcode)}` +
     (input.phone ? `<br><b>Phone:</b> <a href="tel:${input.phone}">${esc(formatPhone(input.phone))}</a>` : '') +
     (input.email ? `<br><b>Email:</b> <a href="mailto:${esc(input.email)}">${esc(input.email)}</a>` : '') +

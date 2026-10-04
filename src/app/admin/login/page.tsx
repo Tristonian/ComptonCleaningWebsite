@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { AdminBar } from '@/components/AdminBar';
 import { getAdmin } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
@@ -21,19 +22,22 @@ export default async function LoginPage({
   const message = error ? (MESSAGES[error] ?? MESSAGES.failed) : null;
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 px-4 py-12">
-      <h1 className="text-2xl font-bold text-brand-deep">Admin sign in</h1>
-      {message && (
-        <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
-          {message}
-        </p>
-      )}
-      <a
-        href="/api/auth/google"
-        className="rounded-xl bg-brand px-4 py-3 text-center font-semibold text-white shadow active:bg-brand-deep"
-      >
-        Sign in with Google
-      </a>
-    </main>
+    <>
+      <AdminBar />
+      <main className="mx-auto flex min-h-[calc(100dvh-3.5rem)] max-w-sm flex-col justify-center gap-6 px-4 py-12">
+        <h1 className="text-2xl font-bold text-brand-deep">Admin sign in</h1>
+        {message && (
+          <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+            {message}
+          </p>
+        )}
+        <a
+          href="/api/auth/google"
+          className="rounded-xl bg-brand px-4 py-3 text-center font-semibold text-white shadow active:bg-brand-deep"
+        >
+          Sign in with Google
+        </a>
+      </main>
+    </>
   );
 }

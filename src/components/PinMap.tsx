@@ -36,15 +36,32 @@ export function PinMap({
         if (cancelled || !box.current) return;
         mapboxgl.accessToken = token;
         const start = latest.current.point;
+        // A mouse (hover + fine pointer): the wheel zooms the map and a drag pans it. A touchscreen:
+        // one finger must keep scrolling the page, so the map needs two fingers (pinch to zoom, drag
+        // to pan) and says so. The +/- buttons work for everyone, including keyboard users.
+        const mouse = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
         const m = new mapboxgl.Map({
           container: box.current,
           style: 'mapbox://styles/mapbox/streets-v12',
           center: [start.lng, start.lat],
           zoom: 17,
+          minZoom: 5,
+          maxZoom: 20,
           attributionControl: true,
-          // The phone page scrolls: stop a one-finger drag on the map from hijacking it.
-          cooperativeGestures: true,
+          cooperativeGestures: !mouse,
+          scrollZoom: true,
+          pitchWithRotate: false,
+          dragRotate: false,
         });
+        m.touchZoomRotate.enable();
+        m.touchZoomRotate.disableRotation(); // pinch zooms, it never spins the map
+        m.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+        // Exposed as data-zoom so tests (and curious developers) can see the zoom level.
+        const reportZoom = () => {
+          m.getContainer().dataset.zoom = m.getZoom().toFixed(2);
+        };
+        m.on('load', reportZoom);
+        m.on('zoom', reportZoom);
         m.on('error', (e) => {
           // A bad or restricted token surfaces as a map error: give up quietly.
           if (!m.loaded()) latest.current.onFail();

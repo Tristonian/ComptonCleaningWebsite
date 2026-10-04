@@ -1,3 +1,4 @@
+import { isService, isSource } from './enquiry-options';
 import { parsePoint, type LatLng } from './geo';
 
 /**
@@ -14,13 +15,17 @@ export interface EnquiryInput {
   phone: string;
   /** Lower-cased email address, or '' if none was given. At least one of phone/email is required. */
   email: string;
+  /** What they want done: a key from SERVICES (required). */
+  service: string;
+  /** How they found Sam: a key from SOURCES, or '' if they did not say. */
+  source: string;
   /** Optional free text from the customer (windows, access, gate codes, best times...). */
   notes: string;
   /** The pin the customer confirmed (or their detected location). Optional; implausible values are dropped. */
   point: LatLng | null;
 }
 
-export type EnquiryError = 'missing' | 'contact-missing' | 'phone' | 'email' | 'postcode' | 'too-long';
+export type EnquiryError = 'missing' | 'service' | 'contact-missing' | 'phone' | 'email' | 'postcode' | 'too-long';
 export type EnquiryCheck = { ok: true; value: EnquiryInput } | { ok: false; error: EnquiryError };
 
 /** Per sender (salted IP hash) and across the whole site. Generous for people, tight for bots. */
@@ -44,6 +49,11 @@ export function checkEnquiry(raw: Record<string, unknown>): EnquiryCheck {
   const rawEmail = clean(raw.email);
 
   if (!name || !address || !rawPostcode) return { ok: false, error: 'missing' };
+  const service = clean(raw.service);
+  if (!isService(service)) return { ok: false, error: 'service' };
+  // An unknown or blank source is simply "didn't say": it is optional and never worth refusing for.
+  const rawSource = clean(raw.source);
+  const source = isSource(rawSource) ? rawSource : '';
   if (!rawPhone && !rawEmail) return { ok: false, error: 'contact-missing' };
   if (
     name.length > MAX.name ||
@@ -65,7 +75,7 @@ export function checkEnquiry(raw: Record<string, unknown>): EnquiryCheck {
 
   return {
     ok: true,
-    value: { name, address, postcode, phone, email, notes, point: parsePoint(raw.lat, raw.lng) },
+    value: { name, address, postcode, phone, email, service, source, notes, point: parsePoint(raw.lat, raw.lng) },
   };
 }
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkEnquiry, formatPhone, normaliseEmail, normalisePhone, normalisePostcode } from './enquiry';
 
-const good = { name: 'Jo', address: '1 High St', postcode: 'bs161aa', phone: '07700 900123', email: '' };
+const good = { name: 'Jo', address: '1 High St', postcode: 'bs161aa', phone: '07700 900123', email: '', service: 'window-cleaning' };
 
 describe('checkEnquiry', () => {
   it('accepts a phone only, an email only, or both', () => {
@@ -25,6 +25,14 @@ describe('checkEnquiry', () => {
   });
   it('a bad email is rejected even when the phone is fine', () => {
     expect(checkEnquiry({ ...good, email: 'jo@' }).ok).toBe(false);
+  });
+  it('needs a real service, and ignores a bad or blank source', () => {
+    expect(checkEnquiry({ ...good, service: '' })).toEqual({ ok: false, error: 'service' });
+    expect(checkEnquiry({ ...good, service: 'tarmac' })).toEqual({ ok: false, error: 'service' });
+    const noSource = checkEnquiry({ ...good, source: 'nonsense' });
+    expect(noSource.ok && noSource.value).toMatchObject({ service: 'window-cleaning', source: '' });
+    const withSource = checkEnquiry({ ...good, source: 'google-maps' });
+    expect(withSource.ok && withSource.value.source).toBe('google-maps');
   });
   it('rejects oversized input', () => {
     expect(checkEnquiry({ ...good, name: 'x'.repeat(101) })).toEqual({ ok: false, error: 'too-long' });
