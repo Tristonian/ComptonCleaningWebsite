@@ -7,6 +7,12 @@ import { localeFromPath } from '@/lib/content/shared';
  * edge runtime, so it must stay free of Node/Worker-binding imports.
  */
 export function middleware(req: NextRequest) {
+  // www -> apex, permanently (one address for search engines and for the OAuth redirect URI).
+  if (req.nextUrl.hostname.startsWith('www.')) {
+    const url = req.nextUrl.clone();
+    url.hostname = url.hostname.slice(4);
+    return NextResponse.redirect(url, 301);
+  }
   const headers = new Headers(req.headers);
   headers.set('x-locale', localeFromPath(req.nextUrl.pathname));
   return NextResponse.next({ request: { headers } });

@@ -239,6 +239,11 @@ export async function HomePage() {
         <Ed id="footer.copy" as="p">
           © Compton Cleaning Services
         </Ed>
+        <p className="mt-2">
+          <a href="/privacy" className="underline">
+            Privacy
+          </a>
+        </p>
       </footer>
     </main>
   );

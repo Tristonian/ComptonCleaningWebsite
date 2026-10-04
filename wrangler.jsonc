@@ -9,6 +9,12 @@
 	// from Tristan's machine can never land on the wrong account.
 	"account_id": "f63f844d70738925fc7fb251893122cc",
 	"observability": { "enabled": true, "head_sampling_rate": 1 },
+	// Production custom domains (created on `npm run deploy`; the zone is on Sam's account). www is
+	// attached only so middleware.ts can redirect it to the apex.
+	"routes": [
+		{ "pattern": "comptoncleaning.co.uk", "custom_domain": true },
+		{ "pattern": "www.comptoncleaning.co.uk", "custom_domain": true }
+	],
 	"assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
 	"services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "compton-cleaning" }],
 	"vars": {
