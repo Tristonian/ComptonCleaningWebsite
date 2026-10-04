@@ -18,6 +18,11 @@ describe('reply templates', () => {
   it('firstName takes the first word and never returns empty', () => {
     expect(firstName('Jo Bloggs')).toBe('Jo');
     expect(firstName('  ')).toBe('there');
+    expect(firstName('TRISTAN POINTER')).toBe('Tristan');
+    expect(firstName('tristan')).toBe('Tristan');
+    expect(firstName("O'NEILL")).toBe("O'Neill");
+    expect(firstName('McDonald')).toBe('McDonald');
+    expect(firstName('J')).toBe('J');
   });
   it('fillTemplate replaces every {name}', () => {
     const out = fillTemplate('Hi {name}, {name}!', 'Jo Bloggs');

@@ -4,7 +4,10 @@ import { CustomerForm } from '@/components/admin/CustomerForm';
 import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { getEnv } from '@/lib/env';
-import { getCustomer, listPaymentMethods, listRounds } from '@/lib/customers';
+import { getCustomer, listPaymentMethods, listRounds, todayLondon } from '@/lib/customers';
+import { listJobs } from '@/lib/jobs';
+import { VisitForm } from '@/components/admin/VisitForm';
+import { VisitHistory } from '@/components/admin/VisitHistory';
 import { deleteCustomerAction, saveCustomerAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +26,8 @@ export default async function CustomerPage({
   const db = getDb();
   const c = await getCustomer(id, db);
   if (!c) notFound();
-  const [rounds, payments] = await Promise.all([listRounds(db), listPaymentMethods(db)]);
+  const [rounds, payments, jobs] = await Promise.all([listRounds(db), listPaymentMethods(db), listJobs(c.id, db)]);
+  const today = todayLondon();
 
   return (
     <>
@@ -58,6 +62,30 @@ export default async function CustomerPage({
           mapboxToken={getEnv('MAPBOX_TOKEN')}
           submitLabel="Save"
         />
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xl font-black text-brand-deep">Visits and payments</h2>
+          <details className="rounded-xl bg-white p-3 ring-1 ring-ink/10">
+            <summary className="cursor-pointer text-base font-black text-brand-deep">➕ Log a visit</summary>
+            <div className="mt-3">
+              <VisitForm
+                customerId={c.id}
+                defaults={{ pricePence: c.pricePence, preferredPayment: c.preferredPayment }}
+                methods={payments}
+                today={today}
+                back={`/admin/customers/${c.id}`}
+              />
+            </div>
+          </details>
+          <VisitHistory
+            customerId={c.id}
+            jobs={jobs}
+            methods={payments}
+            today={today}
+            back={`/admin/customers/${c.id}`}
+            preferredPayment={c.preferredPayment}
+          />
+        </section>
 
         <section className="rounded-xl bg-red-50 p-4 ring-1 ring-red-200">
           <h2 className="font-black text-red-900">Delete this customer</h2>

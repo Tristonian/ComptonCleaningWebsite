@@ -69,3 +69,8 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Room for the admin tab bar so the last item on a page is never hidden behind it. */
+body:has(.admin-tabs) {
+  padding-bottom: 5rem;
+}

@@ -1,9 +1,12 @@
+import { AdminTabs } from '@/components/AdminTabs';
+
 /**
  * The strip across the top of every /admin page: a clear way back to the public website, who is
  * signed in, and sign out. Plain server markup (no client JS), so it works on a bad connection.
  */
 export function AdminBar({ email }: { email?: string }) {
   return (
+    <>
     <header className="sticky top-0 z-10 border-b border-ink/10 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-2">
         <a
@@ -22,5 +25,7 @@ export function AdminBar({ email }: { email?: string }) {
         )}
       </div>
     </header>
+    {email && <AdminTabs />}
+    </>
   );
 }

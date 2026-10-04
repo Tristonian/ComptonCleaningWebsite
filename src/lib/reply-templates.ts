@@ -41,10 +41,20 @@ export const REPLY_TEMPLATES: readonly ReplyTemplate[] = [
   },
 ];
 
+/**
+ * A name typed in ALL CAPS or all lower case reads badly in a greeting ("Hi TRISTAN"), so those get
+ * capitalised: "TRISTAN" -> "Tristan", "o'neill" -> "O'Neill". Mixed case is left exactly as typed,
+ * because "McDonald" and "DeShawn" are deliberate.
+ */
+export function tidyName(word: string): string {
+  if (word.length < 2 || (word !== word.toUpperCase() && word !== word.toLowerCase())) return word;
+  return word.toLowerCase().replace(/(^|[-'’])(\p{L})/gu, (_m, sep: string, ch: string) => sep + ch.toUpperCase());
+}
+
 /** "Jo Bloggs" -> "Jo". Falls back to "there" so a template never says "Hi ,". */
 export function firstName(full: string): string {
   const first = full.trim().split(/\s+/)[0] ?? '';
-  return first || 'there';
+  return first ? tidyName(first) : 'there';
 }
 
 export function fillTemplate(text: string, customerName: string): string {

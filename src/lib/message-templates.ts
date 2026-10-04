@@ -1,6 +1,8 @@
 // The texts Sam sends from the customer list. Defaults live here; the Templates screen (next) will let
 // him switch them off and edit them, overrides-only like page content. Tokens are {first_name} etc.
 
+import { tidyName } from '@/lib/reply-templates';
+
 export type TemplateKey = 'coming_tomorrow';
 
 export const TEMPLATE_DEFAULTS: Record<TemplateKey, { label: string; body: string }> = {

@@ -34,6 +34,11 @@ export default async function AdminHome() {
           </span>
         </a>
 
+        <a href="/admin/work" className={tile}>
+          <span className="text-xl font-black text-brand-deep">Work</span>
+          <span className="text-sm text-ink/70">Who is due this week, mark visits done or missed, debts and payments.</span>
+        </a>
+
         <a href="/admin/customers" className={tile}>
           <span className="text-xl font-black text-brand-deep">Customers</span>
           <span className="text-sm text-ink/70">Who is due, who owes, call or text in one tap. Add customers, import from Squeegee.</span>
