@@ -21,17 +21,16 @@ pushed to GitHub**._
 
 ## ⚠️ Not verified (be honest about these)
 
-- **A real Google login has not been confirmed end to end.** The pre-Google half and every refusal
-  path were driven; the last attempt hit `redirect_uri_mismatch` because the staging URI
-  (`https://staging.comptoncleaning.co.uk/api/auth/google/callback`) had not yet been saved in the
-  Google client. Confirm it is saved, then sign in on staging and on a phone.
+- ✅ **Google login confirmed working on staging** (Tristan, end of session 1, after saving the
+  staging redirect URI in the Google client). Still unchecked: Sam's own login, and login on a phone.
 - **The pencil has never been used in a browser**: tap text, type, Save, Revert, reload.
 - **Nothing has been seen on a real phone.**
 - **Welsh is machine-drafted** (`src/content/cy.ts`). A fluent speaker must review it before launch.
 
 ## Do first next session
 
-- [ ] Confirm the Google redirect URI is saved; sign in at `/admin/login` on staging; check `/admin`.
+- [x] Google redirect URI saved; Tristan signed in on staging. [ ] Sam to sign in once (expect the
+      "hasn't verified this app" screen: Advanced -> Continue).
 - [ ] Use the pencil on staging: change the heading in English and in Welsh, Save, reload, Revert.
 - [ ] Push `main` + `staging` to GitHub (repo is public: `.env.local` ignored and verified, re-check).
 - [ ] CI (`typecheck`, `test`, `audit`) and `deploy.yml`; needs a Cloudflare API token with Workers,

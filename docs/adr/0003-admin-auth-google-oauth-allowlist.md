@@ -23,6 +23,15 @@ impossible: this is a one- or two-person admin, not a user base.
 - **Our own session, not Google's:** on success we mint a random 32-byte token, store only its
   SHA-256 in the `sessions` table, and set it in an `HttpOnly; Secure; SameSite=Lax` cookie
   (30 days, sliding). Logout deletes the row.
+- **Gmail equivalence:** allow-list comparison treats `gmail.com` and `googlemail.com` as one mailbox
+  and ignores dots and `+tags` for those two domains only (Google does the same; other domains
+  are compared exactly). Sam's and Tristan's addresses are `gmail`/`googlemail` forms.
+- **Sessions are re-checked against the allow-list on every request**, so removing an address from
+  `ADMIN_ALLOWED_EMAILS` locks that person out immediately, even with a live session row.
+- **Logout** is POST-only and checks the Origin header.
+- **Google project:** `comptoncleaning`, owned by Sam's Google account; consent screen is in
+  *Testing* with Sam and Tristan as test users until the site has a homepage and privacy policy
+  URL (Google requires both to publish). Redirect URIs: localhost, staging, and (to add) production.
 - **CSRF / replay:** `state` and the PKCE verifier live in a short-lived (10 min) signed
   cookie, checked and cleared on callback.
 - **Validate the ID token properly:** signature against Google's JWKS, plus `iss`, `aud`

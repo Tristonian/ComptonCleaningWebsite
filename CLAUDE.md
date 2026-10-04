@@ -23,6 +23,7 @@ planner is a separate product (WindowsWayfinder); do not merge the two.
 
 ## Sources of truth
 
+0. `docs/NEXT-CHAT-BUILD-THE-SITE.md` — latest handover brief and gotchas.
 1. `docs/ROADMAP.md` — direction and phases. Implement the current phase only.
 2. `docs/adr/` — why load-bearing choices were made. Don't undo one without reading it.
 3. `docs/NEXT_STEPS.md` — the live backlog (in-chat todos don't persist). Keep it current.
@@ -58,6 +59,13 @@ Build on `staging`, verify on the wire, then fast-forward `main`. CI (`typecheck
 `audit`) runs on push and PR; `deploy.yml` triggers on push only, never on `pull_request`.
 Flag anything not yet checked on a real phone.
 
-## Not yet done
+## Status
 
-Everything. See `docs/NEXT_STEPS.md`.
+Foundations are built and **staging is live** (https://staging.comptoncleaning.co.uk): hosting, D1,
+Google admin login (confirmed working), the `<Ed>` pencil, the `/cy` Welsh switch. The public
+pages are not built (the homepage is a placeholder) and production is not deployed. What is and
+is not verified is listed in `docs/NEXT_STEPS.md`; read that list before building on anything.
+
+**Sam's Cloudflare account, not Tristan's.** Account `f63f844d70738925fc7fb251893122cc` is pinned
+in `wrangler.jsonc`; always set `CLOUDFLARE_ACCOUNT_ID`. Handover for the next build session:
+`docs/NEXT-CHAT-BUILD-THE-SITE.md`.

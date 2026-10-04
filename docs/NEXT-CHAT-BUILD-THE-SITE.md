@@ -28,13 +28,14 @@ Staging is live at https://staging.comptoncleaning.co.uk. Read `CLAUDE.md`, then
 
 ## Not verified
 
-A full Google login on staging, the pencil in a browser, anything on a real phone, and the
-Welsh wording. Verify these first; do not build on top of an assumption.
+Tristan has signed in with Google on staging (confirmed). Still unverified: Sam's own login, the
+pencil in a browser, anything on a real phone, and the Welsh wording. Verify the pencil first; do
+not build on top of an assumption.
 
 ## Paste this
 
-> Read CLAUDE.md, docs/NEXT_STEPS.md and docs/NEXT-CHAT-BUILD-THE-SITE.md. First confirm login and
-> the pencil work on https://staging.comptoncleaning.co.uk (I'll sign in and tell you what I see).
+> Read CLAUDE.md, docs/NEXT_STEPS.md and docs/NEXT-CHAT-BUILD-THE-SITE.md. Login already works on
+> https://staging.comptoncleaning.co.uk; first have me check the pencil there (I'll tell you what I see).
 > Then build the public site in house style: pencil on every string (English + Welsh), sticky
 > Call/WhatsApp bar, pricing, postcode checker, glass UI with the squeegee scroll bar and the
 > before/after slider. I'll have Sam's prices and postcodes to hand.
