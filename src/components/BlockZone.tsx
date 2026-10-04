@@ -3,6 +3,9 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEditMode } from '@/components/EditMode';
+import { RichText } from '@/components/RichText';
+import { RichTextEditor } from '@/components/RichTextEditor';
+import { toEditorHtml } from '@/lib/rich';
 import { MAX_PHOTO_BYTES, ZONES, blockText, type Block, type ZoneId } from '@/lib/blocks-shared';
 import { PhotoError, shrinkPhoto } from '@/lib/photo-resize';
 import {
@@ -186,7 +189,7 @@ export function BlockZone({
                   )}
                 </figure>
               ) : (
-                <p className="whitespace-pre-line text-lg">{blockText(b, locale)}</p>
+                <RichText html={blockText(b, locale)} className="text-lg" />
               )}
 
               {editing && (
@@ -204,7 +207,7 @@ export function BlockZone({
                     className={small}
                     onClick={() => {
                       setEditingId(b.id);
-                      setDraft(blockText(b, locale));
+                      setDraft(b.kind === 'image' ? blockText(b, locale) : toEditorHtml(blockText(b, locale)));
                     }}
                   >
                     ✎
@@ -228,15 +231,21 @@ export function BlockZone({
 
             {editing && editingId === b.id && (
               <div className="mt-2 rounded-xl bg-white p-3 shadow ring-1 ring-ink/20">
-                <label className="text-xs font-semibold text-ink/70">
+                <div className="text-xs font-semibold text-ink/70">
                   {b.kind === 'image' ? 'Caption' : 'Text'} ({locale === 'cy' ? 'Cymraeg' : 'English'})
-                  <textarea
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    rows={b.kind === 'image' ? 2 : 4}
-                    className="mt-1 w-full rounded-lg border border-ink/20 p-2 text-base font-normal text-ink"
-                  />
-                </label>
+                  <div className="mt-1 font-normal">
+                    {b.kind === 'image' ? (
+                      <textarea
+                        value={draft}
+                        onChange={(e) => setDraft(e.target.value)}
+                        rows={2}
+                        className="w-full rounded-lg border border-ink/20 p-2 text-base text-ink"
+                      />
+                    ) : (
+                      <RichTextEditor key={`${b.id}:${locale}`} value={draft} onChange={setDraft} autoFocus />
+                    )}
+                  </div>
+                </div>
                 <div className="mt-2 flex gap-2">
                   <button
                     type="button"

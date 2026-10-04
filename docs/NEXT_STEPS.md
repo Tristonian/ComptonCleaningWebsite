@@ -211,8 +211,16 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
       URI + Sam as test user, Sam reads `/privacy`, test enquiry from a phone. Still to do after: Neon history retention up,
       Mapbox usage alert, DMARC record, real reviews and Sam's real price before any marketing.
 - [ ] Real reviews (none invented), Sam's real price, before/after slider, area/SEO pages.
-- [ ] Decide the WindowsWayfinder boundary (CLAUDE.md says do not merge; Tristan says it stalled and wants the
-      planner here for Sam first): write an ADR, then update CLAUDE.md.
+- [x] WindowsWayfinder boundary decided 2026-10-04: **keep it separate** (ADR 0007). CLAUDE.md's rule stands.
+- [x] Real-device checks of sessions 2-3 (contact form, location/pin, logo and colour, blocks, own services, hide/show):
+      Tristan reports all good on a real phone (2026-10-04). Sam's own login on a phone is still worth one look.
+- [x] Sam's Gmail "send as" `hello@` with his own Resend key: done (Tristan, 2026-10-04).
+- [x] **Rich text for body copy** (built 2026-10-04, ADR 0007; UNVERIFIED in a browser and on a phone): the pencil's box for
+      body paragraphs, text blocks and service descriptions is now a rich editor (bold, italic, underline, lists, links;
+      Enter = new paragraph; blank lines kept). Unit-tested (sanitiser, plain-to-paragraph conversion, blank lines, saves
+      through the stores); the editing flow itself has NOT been exercised. **Check first on staging:** open the pencil on the
+      intro, press Enter twice, type, Save, reload, confirm the gap shows; then Revert; then the same in Welsh and in a text block.
+      Headings/labels are still the plain box (only nodes marked `rich` in `HomePage.tsx` changed).
 
 ## SEO (replaces Sam's ~£100/month agency; no ranking guarantees)
 

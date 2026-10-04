@@ -19,7 +19,7 @@ getting too long!` Then resume starting every message with `Tristan, ` again.
 A fast, mobile-first marketing site for Sam Compton's window-cleaning business
 (comptoncleaning.co.uk) with a lightweight "edit anywhere" admin so Sam can change wording,
 prices, testimonials and photos from his phone. Not a CMS, not a booking system. Sam's round
-planner is a separate product (WindowsWayfinder); do not merge the two.
+planner is a separate product (WindowsWayfinder); do not merge the two (decided by Tristan 2026-10-04, ADR 0007).
 
 ## Sources of truth
 
@@ -40,6 +40,9 @@ staging. Sibling repos HairByRachel and WindowsWayfinder are the reference imple
 - **House style = HairByRachel.** When unsure how to do something, look there first.
 - **Money is integer pence**; format to `£` only in the UI. Times stored UTC, shown Europe/London.
 - **Content is overrides-only:** defaults in code, a database row only where Sam changed something.
+- **Body copy is rich text, everything else plain** (ADR 0007): `<Ed rich>` nodes, text blocks and service
+  descriptions store sanitised HTML (server-side, every save); blank lines are kept. Never render a stored
+  value as HTML except through `RichText` / `toDisplayHtml`.
 - **Admin is allow-listed:** a valid Google login is never enough on its own (ADR 0003).
   Every admin route and every mutation checks the session server-side.
 - **Never trust the client for the admin flag.** "Admin mode" is UI only; the API enforces.

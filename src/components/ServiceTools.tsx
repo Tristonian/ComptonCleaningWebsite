@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useEditMode } from '@/components/EditMode';
 import { BlockZone } from '@/components/BlockZone';
 import { Hideable } from '@/components/Hideable';
+import { RichText } from '@/components/RichText';
+import { RichTextEditor } from '@/components/RichTextEditor';
+import { toEditorHtml } from '@/lib/rich';
 import type { Block, ZoneId } from '@/lib/blocks-shared';
 import type { CustomService } from '@/lib/services-custom';
 import {
@@ -68,7 +71,7 @@ export function CustomServiceCard({
       <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-ink/10">
         <h3 className="mb-2 text-xl font-bold">{shownTitle}</h3>
         <BlockZone zone={`${zone}-top` as ZoneId} compact blocks={topBlocks} order={order} label={`${service.titleEn}: under the title`} />
-        {shownBody && <p className="whitespace-pre-line text-ink/80">{shownBody}</p>}
+        {shownBody && <RichText html={shownBody} className="text-ink/80" />}
 
         <BlockZone zone={zone} compact blocks={blocks} order={order} label={`${service.titleEn}: under the text`} />
 
@@ -86,7 +89,7 @@ export function CustomServiceCard({
               className={small}
               onClick={() => {
                 setTitle(shownTitle);
-                setBody(shownBody);
+                setBody(toEditorHtml(shownBody));
                 setOpen(true);
               }}
             >
@@ -117,15 +120,12 @@ export function CustomServiceCard({
                 className="mt-1 w-full rounded-lg border border-ink/20 p-2 text-base font-normal text-ink"
               />
             </label>
-            <label className="mt-2 block text-xs font-semibold text-ink/70">
+            <div className="mt-2 text-xs font-semibold text-ink/70">
               Description
-              <textarea
-                value={body}
-                rows={4}
-                onChange={(e) => setBody(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-ink/20 p-2 text-base font-normal text-ink"
-              />
-            </label>
+              <div className="mt-1 font-normal">
+                <RichTextEditor key={`${service.id}:${locale}`} value={body} onChange={setBody} />
+              </div>
+            </div>
             <div className="mt-2 flex gap-2">
               <button
                 type="button"

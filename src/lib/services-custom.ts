@@ -1,6 +1,7 @@
 import 'server-only';
 import { getDb, type Db } from '@/lib/db';
 import { deleteBlock } from '@/lib/blocks';
+import { cleanRichField } from '@/lib/rich-sanitize';
 
 /**
  * Services Sam adds himself (e.g. Pressure washing): a card with a title and description per
@@ -70,8 +71,11 @@ export async function updateService(
   if (!/^\d+$/.test(String(args.id))) return { ok: false, error: 'Unknown service.' };
   if (typeof args.title !== 'string' || typeof args.body !== 'string') return { ok: false, error: 'Bad text.' };
   const title = args.title.trim();
-  const body = args.body.trim();
-  if (title.length > MAX_TITLE || body.length > MAX_BODY) return { ok: false, error: 'That text is too long.' };
+  if (args.body.length > MAX_BODY * 4) return { ok: false, error: 'That text is too long.' };
+  const cleaned = cleanRichField(args.body, MAX_BODY);
+  if (!cleaned.ok) return cleaned;
+  const body = cleaned.value;
+  if (title.length > MAX_TITLE) return { ok: false, error: 'That text is too long.' };
   if (args.locale === 'en' && !title) return { ok: false, error: 'A service needs a title.' };
   const [t, b] = args.locale === 'cy' ? ['title_cy', 'body_cy'] : ['title_en', 'body_en'];
   try {

@@ -11,10 +11,10 @@ import { resetNode, saveNode, type SaveResult } from '@/lib/content/store';
 
 const DENIED: SaveResult = { ok: false, error: 'Not signed in.' };
 
-export async function saveNodeAction(locale: string, key: string, value: string): Promise<SaveResult> {
+export async function saveNodeAction(locale: string, key: string, value: string, rich = false): Promise<SaveResult> {
   const admin = await getAdmin();
   if (!admin) return DENIED;
-  return saveNode({ locale, key, value, by: admin.email });
+  return saveNode({ locale, key, value, rich, by: admin.email });
 }
 
 export async function resetNodeAction(locale: string, key: string): Promise<SaveResult> {

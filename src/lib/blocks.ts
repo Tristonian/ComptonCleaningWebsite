@@ -1,6 +1,7 @@
 import 'server-only';
 import { getDb, type Db } from '@/lib/db';
 import { isImageHash } from '@/lib/appearance-shared';
+import { cleanRichField } from '@/lib/rich-sanitize';
 import { MAX_BLOCK_TEXT, isZone, type Block, type ZoneId } from '@/lib/blocks-shared';
 
 /**
@@ -111,11 +112,14 @@ export async function updateBlockText(
   db: Db = getDb(),
 ): Promise<Result> {
   if (args.locale !== 'en' && args.locale !== 'cy') return { ok: false, error: 'Unknown language.' };
-  if (typeof args.text !== 'string' || args.text.length > MAX_BLOCK_TEXT) return { ok: false, error: 'That text is too long.' };
+  if (typeof args.text !== 'string' || args.text.length > MAX_BLOCK_TEXT * 4) return { ok: false, error: 'That text is too long.' };
+  // Text blocks are rich text (ADR 0007); photo captions stay plain.
+  const cleaned = cleanRichField(args.text, MAX_BLOCK_TEXT);
+  if (!cleaned.ok) return cleaned;
   if (!/^\d+$/.test(String(args.id))) return { ok: false, error: 'Unknown block.' };
   const column = args.locale === 'cy' ? 'text_cy' : 'text_en';
   try {
-    const found = await db.query(`UPDATE page_blocks SET ${column} = $1 WHERE id = $2 RETURNING id`, [args.text.trim(), args.id]);
+    const found = await db.query(`UPDATE page_blocks SET ${column} = $1 WHERE id = $2 RETURNING id`, [cleaned.value, args.id]);
     if (found.length === 0) return { ok: false, error: 'That block no longer exists.' };
     await db.query('INSERT INTO audit_log (email, action, detail) VALUES ($1, $2, $3)', [
       args.by,

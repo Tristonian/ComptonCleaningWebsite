@@ -3,6 +3,7 @@
 import { useEffect, type ElementType, type KeyboardEvent, type MouseEvent } from 'react';
 import { useEditMode } from '@/components/EditMode';
 import { cy } from '@/content/cy';
+import { RICH_CLASSES, toDisplayHtml, toRichHtml } from '@/lib/rich';
 
 /**
  * One editable piece of text.
@@ -22,6 +23,7 @@ export function Ed({
   className,
   children,
   label,
+  rich = false,
 }: {
   id: string;
   as?: ElementType;
@@ -29,6 +31,11 @@ export function Ed({
   /** The English default. A plain string: this is a text node, not a slot. */
   children: string;
   label?: string;
+  /**
+   * Body copy that can have paragraphs, bold, lists and links (ADR 0007). Shown through a `div`
+   * whatever `as` says, because the paragraphs inside are `<p>` and cannot nest in a `<p>`.
+   */
+  rich?: boolean;
 }) {
   const { locale, editing, selected, select, register, currentOf } = useEditMode();
 
@@ -37,10 +44,40 @@ export function Ed({
   const machine = welsh !== undefined;
 
   useEffect(() => {
-    register(id, defaultText, machine);
-  }, [id, defaultText, machine, register]);
+    register(id, rich ? toRichHtml(defaultText) : defaultText, machine, rich);
+  }, [id, defaultText, machine, rich, register]);
 
   const text = currentOf(id) ?? defaultText;
+
+  if (rich) {
+    const html = toDisplayHtml(text);
+    const cls = `${className ?? ''} ${RICH_CLASSES}`;
+    if (!editing) return <div className={cls} dangerouslySetInnerHTML={{ __html: html }} />;
+    return (
+      <div
+        className={cls}
+        data-ed={id}
+        data-ed-selected={selected === id || undefined}
+        role="button"
+        tabIndex={0}
+        aria-label={`Edit ${label ?? id}`}
+        onClick={(e) => {
+          // A link inside the text must not navigate away from the page being edited.
+          e.preventDefault();
+          e.stopPropagation();
+          select(id);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            select(id);
+          }
+        }}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
 
   if (!editing) return <Tag className={className}>{text}</Tag>;
 

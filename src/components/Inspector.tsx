@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useEditMode } from '@/components/EditMode';
+import { RichTextEditor } from '@/components/RichTextEditor';
+import { richToPlain, toEditorHtml } from '@/lib/rich';
 
 /**
  * Bottom sheet, because Sam edits from a phone: a docked side panel would cover the text being
@@ -60,7 +62,7 @@ export function Inspector() {
     <div
       role="dialog"
       aria-label="Edit text"
-      className="fixed inset-x-0 bottom-0 z-[70] rounded-t-2xl bg-white p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] print:hidden"
+      className="fixed inset-x-0 bottom-0 z-[70] max-h-[85dvh] overflow-y-auto rounded-t-2xl bg-white p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.18)] print:hidden"
     >
       <div className="mx-auto max-w-xl">
         <div className="mb-2 flex items-center justify-between gap-3">
@@ -78,13 +80,18 @@ export function Inspector() {
           </p>
         )}
 
-        <textarea
-          ref={area}
-          value={shown}
-          onChange={(e) => preview(key, e.target.value)}
-          rows={3}
-          className="w-full resize-none rounded-xl border border-ink/20 p-3 text-base focus:border-brand focus:outline-none"
-        />
+        {def?.rich ? (
+          // Keyed so selecting another piece of text loads its words into a fresh editor.
+          <RichTextEditor key={`${locale}:${key}`} value={toEditorHtml(shown)} onChange={(html) => preview(key, html)} autoFocus />
+        ) : (
+          <textarea
+            ref={area}
+            value={shown}
+            onChange={(e) => preview(key, e.target.value)}
+            rows={3}
+            className="w-full resize-none rounded-xl border border-ink/20 p-3 text-base focus:border-brand focus:outline-none"
+          />
+        )}
 
         {error && (
           <p role="alert" className="mt-2 text-sm text-red-700">
@@ -112,7 +119,11 @@ export function Inspector() {
             </button>
           )}
         </div>
-        {hasOverride && def && <p className="mt-2 text-xs text-ink/60">Original: {def.text}</p>}
+        {hasOverride && def && (
+          <p className="mt-2 line-clamp-3 whitespace-pre-line text-xs text-ink/60">
+            Original: {def.rich ? richToPlain(def.text) : def.text}
+          </p>
+        )}
       </div>
     </div>
   );

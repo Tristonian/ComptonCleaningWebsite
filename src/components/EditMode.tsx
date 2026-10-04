@@ -26,7 +26,7 @@ import { Inspector } from '@/components/Inspector';
  * `canEdit` is a UI hint only. The server actions re-check the session on every call.
  */
 
-type Registered = { text: string; machine: boolean };
+type Registered = { text: string; machine: boolean; rich: boolean };
 
 type EditModeValue = {
   locale: Locale;
@@ -36,7 +36,7 @@ type EditModeValue = {
   selected: string | null;
   select: (key: string | null) => void;
   /** Each <Ed> reports its shipped default for this language. */
-  register: (key: string, text: string, machine: boolean) => void;
+  register: (key: string, text: string, machine: boolean, rich?: boolean) => void;
   registered: (key: string) => Registered | undefined;
   /** The saved override, if any. */
   overrideOf: (key: string) => string | undefined;
@@ -94,8 +94,8 @@ export function EditModeProvider({
     setDrafts({});
   }, [locale]);
 
-  const register = useCallback((key: string, text: string, machine: boolean) => {
-    defaults.current.set(key, { text, machine });
+  const register = useCallback((key: string, text: string, machine: boolean, rich = false) => {
+    defaults.current.set(key, { text, machine, rich });
   }, []);
   const registered = useCallback((key: string) => defaults.current.get(key), []);
 
@@ -124,7 +124,7 @@ export function EditModeProvider({
       const result =
         def && draft.trim() === def.text
           ? await resetNodeAction(locale, key)
-          : await saveNodeAction(locale, key, draft);
+          : await saveNodeAction(locale, key, draft, def?.rich ?? false);
       setBusy(false);
       if (result.ok) {
         discard(key);

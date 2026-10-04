@@ -1,6 +1,8 @@
 import 'server-only';
 import { getDb, type Db } from '@/lib/db';
 import { checkValue, isLocale, isValidNodeKey, type Locale } from './shared';
+import { looksLikeHtml } from '@/lib/rich';
+import { checkRichValue } from '@/lib/rich-sanitize';
 
 /**
  * Overrides-only content (ADR 0002/0004, Postgres since ADR 0005). A row exists only where Sam
@@ -43,12 +45,15 @@ async function previousValue(db: Db, locale: string, key: string): Promise<strin
 }
 
 export async function saveNode(
-  args: { locale: unknown; key: unknown; value: unknown; by: string },
+  args: { locale: unknown; key: unknown; value: unknown; rich?: boolean; by: string },
   db: Db = getDb(),
 ): Promise<SaveResult> {
   if (!isLocale(args.locale)) return { ok: false, error: 'Unknown language.' };
   if (!isValidNodeKey(args.key)) return { ok: false, error: 'That is not a valid field.' };
-  const checked = checkValue(args.value);
+  // Anything shaped like rich text is sanitised whatever the caller says, so a client that lies
+  // about `rich` still cannot store raw markup (ADR 0007).
+  const asRich = args.rich === true || (typeof args.value === 'string' && looksLikeHtml(args.value));
+  const checked = asRich ? checkRichValue(args.value) : checkValue(args.value);
   if (!checked.ok) return checked;
 
   try {

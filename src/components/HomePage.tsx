@@ -83,10 +83,10 @@ export async function HomePage() {
       <Hideable id="about" label="Intro" hidden={hide('about')}>
         {/* About: the intro, with no heading of its own. */}
         <section className={section}>
-          <Ed id="about.body" as="p" className="text-lg">
+          <Ed id="about.body" as="p" rich className="text-lg">
             {'Compton Cleaning Services offer regular, affordably priced window cleaning services in Bristol, Chepstow, Caldicot and Newport, especially the BS16 and BS5 areas. Other services are gutter cleaning and repair, pressure washing and render cleaning.'}
           </Ed>
-          <Ed id="about.base" as="p" className="mt-3 text-ink/70">
+          <Ed id="about.base" as="p" rich className="mt-3 text-ink/70">
             {'We’re currently based in Lyde Green, Bristol.'}
           </Ed>
         </section>
@@ -105,7 +105,7 @@ export async function HomePage() {
                 Window cleaning
               </Ed>
               <BlockZone zone="service-windows-top" compact blocks={zb('service-windows-top')} order={order} />
-              <Ed id="services.windows.body" as="p" className="text-ink/80">
+              <Ed id="services.windows.body" as="p" rich className="text-ink/80">
                   {'We specialise in regular window maintenance. A regular clean includes windows, frames, doors and sills. Optional extras include interiors, glass roofs and complete conservatory cleaning.'}
                 </Ed>
               <BlockZone zone="service-windows" compact blocks={zb('service-windows')} order={order} />
@@ -117,7 +117,7 @@ export async function HomePage() {
                 Gutters
               </Ed>
               <BlockZone zone="service-gutters-top" compact blocks={zb('service-gutters-top')} order={order} />
-              <Ed id="services.gutters.body" as="p" className="text-ink/80">
+              <Ed id="services.gutters.body" as="p" rich className="text-ink/80">
                   {'Gutter work can include removing debris from the gutter and/or downpipe, cleaning the exteriors and fascias, or repairing the gutters.'}
                 </Ed>
               <BlockZone zone="service-gutters" compact blocks={zb('service-gutters')} order={order} />
@@ -129,7 +129,7 @@ export async function HomePage() {
                 Other jobs taken on
               </Ed>
               <BlockZone zone="service-other-top" compact blocks={zb('service-other-top')} order={order} />
-              <Ed id="services.other.body" as="p" className="text-ink/80">
+              <Ed id="services.other.body" as="p" rich className="text-ink/80">
                   Pressure washing · Render cleaning · Minor exterior repairs
                 </Ed>
               <BlockZone zone="service-other" compact blocks={zb('service-other')} order={order} />
@@ -165,7 +165,7 @@ export async function HomePage() {
           <Ed id="prices.factors.title" as="p" className="mt-6 font-bold">
             Factors to consider
           </Ed>
-          <Ed id="prices.factors.list" as="p" className="text-ink/80">
+          <Ed id="prices.factors.list" as="p" rich className="text-ink/80">
             Size · Location · Urgency
           </Ed>
           <Ed id="prices.regular" as="p" className="mt-6 rounded-xl bg-brand/10 p-4 font-semibold text-brand-deep">
@@ -182,7 +182,7 @@ export async function HomePage() {
         <Ed id="contact.title" as="h2" className={h2}>
           Contact us
         </Ed>
-        <Ed id="contact.intro" as="p" className="mb-3">
+        <Ed id="contact.intro" as="p" rich className="mb-3">
           Contact via text or call
         </Ed>
         <a
