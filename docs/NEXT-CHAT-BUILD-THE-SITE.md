@@ -53,6 +53,22 @@ Neon returns bigint ids as strings (the PGlite test DB is set to match); Windows
 `node -e`/heredoc patches, so write patch scripts to a file; a minted dev session (insert a row into `sessions`
 on the dev branch, set the `cc_session` cookie) is how to test /admin locally without Google.
 
+## Update (end of session 3, 2026-10-04)
+
+Built, deployed to staging and merged to `main` (all UNVERIFIED on a real phone): `/admin/appearance` and the pencil's
+"Logo and colour" sheet (upload with drag and drop, cropper adapted from HairByRachel, R2 `logo/<hash>`, `/img/[hash]`,
+colour picker with contrast warning); the hero collapses on scroll to a thin pinned bar (`HeroHeader`, logo to 10%,
+click goes to top, nav sticks at `top-11`); the website line is gone; photo/GIF/text **blocks** in named zones
+(`src/lib/blocks*.ts`, `BlockZone`, ADR 0006): add several photos, drag or up/down to arrange; **services Sam adds**
+(`custom_services`, `ServiceTools`); two zones per service card (under title / under text, GIFs up to 1.5 MB untouched);
+**hide/show** sections (`Hideable`, `site_settings.hidden_sections`; Contact is never hideable).
+
+Migrations 0006 (appearance), 0007 (blocks), 0008 (custom services) are applied to dev and staging, NOT production.
+Gotchas: a plain `npm run db:migrate` only hits the dev branch, use `-- --branch staging|production`. There is no CI
+deploy: push does nothing, run `CLOUDFLARE_ACCOUNT_ID=f63f... npm run deploy:staging` (stop `next dev` first). The
+Windows shell chokes on long heredocs with quotes: write patch scripts to a file. Next: Tristan tests on his phone
+(blocks, ▲▼, GIF, hide, logo sheet), then production go-live (see NEXT_STEPS), then the parked ideas.
+
 ## Paste this
 
 > Read CLAUDE.md, docs/NEXT_STEPS.md, docs/INFRASTRUCTURE.md, ADR 0005 and docs/NEXT-CHAT-BUILD-THE-SITE.md.

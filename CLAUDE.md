@@ -64,8 +64,10 @@ Flag anything not yet checked on a real phone.
 Foundations are built and **staging is live** (https://staging.comptoncleaning.co.uk): hosting, Neon Postgres,
 Google admin login (confirmed working), the `<Ed>` pencil, the `/cy` Welsh switch, and the one-page
 public site with a working contact form (Resend; `hello@` send/receive set up; location + Mapbox pin),
-and an `/admin` enquiry inbox (read, reply, notes, status, add as customer). Not yet done: logo/photo
-upload and colour picker, real reviews, and production is not deployed. What is and is not verified
+an `/admin` enquiry inbox (read, reply, notes, status, add as customer), and (session 3) logo upload with
+cropper and a header colour picker, a collapsing hero bar, photo/GIF/text blocks Sam adds and arranges from the pencil
+(ADR 0006), services he adds himself, and hide/show for sections. Not yet done: real reviews, and production is not
+deployed (it needs migrations 0006-0008). What is and is not verified
 (almost nothing is checked on a real phone yet) is in `docs/NEXT_STEPS.md`; read it before building on
 anything. Email setup and its gotchas: `docs/INFRASTRUCTURE.md` section 3.
 
