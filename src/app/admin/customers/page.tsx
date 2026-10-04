@@ -3,7 +3,8 @@ import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { listCustomers, listRounds, todayLondon, type CustomerRow, type Filter } from '@/lib/customers';
 import { addRoundAction } from './actions';
-import { fillTemplate, firstNameOf, TEMPLATE_DEFAULTS } from '@/lib/message-templates';
+import { COMING_TOMORROW, fillTemplate, firstNameOf } from '@/lib/message-templates';
+import { getTemplate } from '@/lib/templates';
 import { isUkMobile, smsLink, telLink, whatsappLink } from '@/lib/phone';
 
 export const dynamic = 'force-dynamic';
@@ -19,9 +20,9 @@ const FILTERS: { key: Filter; label: string }[] = [
 const btn = 'flex min-h-11 items-center justify-center rounded-lg px-2 text-center text-sm font-bold text-brand-deep ring-1 ring-brand-deep/40 active:bg-brand/10';
 const topBtn = 'flex min-h-12 items-center justify-center rounded-xl px-4 text-center text-base font-bold text-brand-deep ring-1 ring-brand-deep/40 active:bg-brand/10';
 
-function Row({ c, today }: { c: CustomerRow; today: string }) {
+function Row({ c, today, comingTomorrow }: { c: CustomerRow; today: string; comingTomorrow: string | null }) {
   const overdue = c.nextDue !== null && c.nextDue <= today;
-  const message = fillTemplate(TEMPLATE_DEFAULTS.coming_tomorrow.body, { first_name: firstNameOf(c.name) });
+  const message = comingTomorrow === null ? null : fillTemplate(comingTomorrow, { first_name: firstNameOf(c.name) });
   return (
     <li className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-ink/10">
       <a href={`/admin/customers/${c.id}`} className="flex flex-col gap-0.5">
@@ -61,9 +62,11 @@ function Row({ c, today }: { c: CustomerRow; today: string }) {
               <a href={whatsappLink(c.phone)} className={btn} target="_blank" rel="noreferrer">
                 WhatsApp
               </a>
-              <a href={smsLink(c.phone, message)} className={`${btn} col-span-3`} title={message}>
-                ⏰ Coming tomorrow
-              </a>
+              {message !== null && (
+                <a href={smsLink(c.phone, message)} className={`${btn} col-span-3`} title={message}>
+                  ⏰ Coming tomorrow
+                </a>
+              )}
             </>
           )}
         </div>
@@ -82,11 +85,13 @@ export default async function CustomersPage({
   const filter: Filter = sp.filter === 'due' || sp.filter === 'owing' ? sp.filter : 'all';
   const db = getDb();
   const today = todayLondon();
-  const [rows, everyone, rounds] = await Promise.all([
+  const [rows, everyone, rounds, comingTomorrowTemplate] = await Promise.all([
     listCustomers({ filter, q: sp.q, roundId: sp.round, today }, db),
     listCustomers({}, db),
     listRounds(db),
+    getTemplate(COMING_TOMORROW, db),
   ]);
+  const comingTomorrow = comingTomorrowTemplate?.enabled === false ? null : (comingTomorrowTemplate?.body ?? null);
   const counts = {
     all: everyone.length,
     due: everyone.filter((c) => c.nextDue !== null && c.nextDue <= today).length,
@@ -171,7 +176,7 @@ export default async function CustomersPage({
         ) : (
           <ul className="flex flex-col gap-2">
             {rows.map((c) => (
-              <Row key={c.id} c={c} today={today} />
+              <Row key={c.id} c={c} today={today} comingTomorrow={comingTomorrow} />
             ))}
           </ul>
         )}

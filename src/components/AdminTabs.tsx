@@ -12,6 +12,7 @@ const TABS = [
   { href: '/admin/work', label: 'Work', icon: '🧽' },
   { href: '/admin/customers', label: 'Customers', icon: '👥' },
   { href: '/admin/enquiries', label: 'Enquiries', icon: '📥' },
+  { href: '/admin/templates', label: 'Templates', icon: '✉️' },
   { href: '/admin/appearance', label: 'Site', icon: '🎨' },
 ];
 
@@ -20,7 +21,7 @@ export function AdminTabs() {
   const active = (href: string) => (href === '/admin' ? path === '/admin' : path === href || path.startsWith(`${href}/`));
   return (
     <nav aria-label="Admin" className="admin-tabs fixed inset-x-0 bottom-0 z-20 border-t border-ink/10 bg-white/95 backdrop-blur print:hidden">
-      <div className="mx-auto grid max-w-2xl grid-cols-5">
+      <div className="mx-auto grid max-w-2xl grid-cols-6">
         {TABS.map((t) => (
           <a
             key={t.href}

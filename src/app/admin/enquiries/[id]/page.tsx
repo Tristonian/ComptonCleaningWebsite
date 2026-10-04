@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { AdminBar } from '@/components/AdminBar';
 import { ReplyForm } from '@/components/admin/ReplyForm';
+import { listTemplates } from '@/lib/templates';
 import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { STATUSES, STATUS_LABEL, getEnquiry, isId, markRead } from '@/lib/enquiries-admin';
@@ -37,6 +38,9 @@ export default async function EnquiryPage({
   const found = await getEnquiry(db, id);
   if (!found) notFound();
   const { enquiry: e, replies } = found;
+  const replyTemplates = (await listTemplates(db))
+    .filter((t) => t.kind === 'email' && t.enabled)
+    .map((t) => ({ key: t.key, label: t.label, subject: t.subject, body: t.body }));
   if (e.read_at === null) await markRead(db, id);
 
   const point = e.lat !== null && e.lng !== null ? { lat: e.lat, lng: e.lng } : null;
@@ -164,7 +168,7 @@ export default async function EnquiryPage({
 
         <section className={card}>
           <h2 className={h2}>Reply</h2>
-          <ReplyForm id={e.id} customerName={e.name} email={e.email} />
+          <ReplyForm id={e.id} customerName={e.name} email={e.email} templates={replyTemplates} />
           {replies.length > 0 && (
             <div className="mt-2 flex flex-col gap-3 border-t border-ink/10 pt-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-ink/60">Sent so far</p>

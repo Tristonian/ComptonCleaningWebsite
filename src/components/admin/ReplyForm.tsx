@@ -2,7 +2,10 @@
 
 import { useActionState, useState } from 'react';
 import { sendReplyAction, type ReplyState } from '@/app/admin/enquiries/actions';
-import { REPLY_TEMPLATES, fillTemplate, findTemplate } from '@/lib/reply-templates';
+import { fillTemplate } from '@/lib/reply-templates';
+
+/** The switched-on reply templates, with Sam's edits applied (resolved on the server). */
+export type ReplyChoice = { key: string; label: string; subject: string; body: string };
 
 const field = 'w-full rounded-lg border border-ink/20 bg-white px-3 py-3 text-base text-ink';
 
@@ -10,10 +13,10 @@ const field = 'w-full rounded-lg border border-ink/20 bg-white px-3 py-3 text-ba
  * Write a reply to the customer. Pick a template to fill the box, edit it freely, and send. It goes
  * from hello@ to the email they gave; their answer arrives in Sam's usual inbox.
  */
-export function ReplyForm({ id, customerName, email }: { id: string; customerName: string; email: string }) {
+export function ReplyForm({ id, customerName, email, templates }: { id: string; customerName: string; email: string; templates: ReplyChoice[] }) {
   const [state, action, pending] = useActionState<ReplyState, FormData>(sendReplyAction, { status: 'idle' });
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState(() => fillTemplate(REPLY_TEMPLATES[0].body, customerName));
+  const [subject, setSubject] = useState(templates[0]?.subject ?? '');
+  const [body, setBody] = useState(() => (templates[0] ? fillTemplate(templates[0].body, customerName) : ''));
   const [sentOnce, setSentOnce] = useState(false);
 
   if (!email) {
@@ -25,7 +28,7 @@ export function ReplyForm({ id, customerName, email }: { id: string; customerNam
   }
 
   function pick(templateId: string) {
-    const t = findTemplate(templateId);
+    const t = templates.find((x) => x.key === templateId);
     if (!t) return;
     setSubject(t.subject);
     setBody(fillTemplate(t.body, customerName));
@@ -48,20 +51,18 @@ export function ReplyForm({ id, customerName, email }: { id: string; customerNam
           {state.error}
         </p>
       )}
-      <label className="flex flex-col gap-1 text-sm font-semibold">
-        Start from a template
-        <select
-          className={field}
-          defaultValue={REPLY_TEMPLATES[0].id}
-          onChange={(e) => pick(e.target.value)}
-        >
-          {REPLY_TEMPLATES.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-      </label>
+      {templates.length > 0 && (
+        <label className="flex flex-col gap-1 text-sm font-semibold">
+          Start from a template
+          <select className={field} defaultValue={templates[0].key} onChange={(e) => pick(e.target.value)}>
+            {templates.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <p className="text-sm text-ink/70">
         To: <strong>{email}</strong> · from hello@comptoncleaning.co.uk
       </p>
@@ -72,7 +73,7 @@ export function ReplyForm({ id, customerName, email }: { id: string; customerNam
           required
           maxLength={200}
           className={field}
-          value={subject || REPLY_TEMPLATES[0].subject}
+          value={subject}
           onChange={(e) => setSubject(e.target.value)}
         />
       </label>
