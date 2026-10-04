@@ -5,7 +5,8 @@ import { sha256Hex } from '@/lib/auth/crypto';
 import { getDb } from '@/lib/db';
 import { getEnv } from '@/lib/env';
 import { sendMail } from '@/lib/mail';
-import { RATE_LIMIT, checkEnquiry } from '@/lib/enquiry';
+import { checkEnquiry } from '@/lib/enquiry';
+import { markEmailed, storeEnquiry } from '@/lib/enquiries-store';
 import { isLocale } from '@/lib/content/shared';
 
 export type ContactState = { status: 'idle' } | { status: 'sent' } | { status: 'error'; error: string };
@@ -15,8 +16,9 @@ export type ContactState = { status: 'idle' } | { status: 'sent' } | { status: '
  * lose a customer. `ENQUIRY_TO` (a Worker secret, comma-separated allowed) is where it goes;
  * without it the enquiry is still stored and the failure is logged.
  *
- * Abuse: a honeypot, field limits, and a D1-backed rate limit per sender (salted IP hash, never
- * the raw IP) plus a site-wide daily cap so a botnet cannot flood Sam's inbox or the Resend quota.
+ * Abuse: a honeypot, field limits, and a database-backed rate limit per sender (salted IP hash,
+ * never the raw IP) plus a site-wide daily cap so a botnet cannot flood Sam's inbox or the
+ * Resend quota (see `storeEnquiry`).
  */
 export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<ContactState> {
   // Honeypot: a real visitor never fills this hidden field.
@@ -35,35 +37,16 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
   const requested = h.get('x-locale');
   const locale = isLocale(requested) ? requested : 'en';
   const { name, address, postcode, contact, notes } = checked.value;
-  const now = Math.floor(Date.now() / 1000);
 
   const ip = h.get('cf-connecting-ip') ?? h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   const ipHash = await sha256Hex(`${getEnv('SESSION_SECRET') ?? ''}|enquiry|${ip}`);
 
-  let id: number;
+  const db = getDb();
+  let id: string;
   try {
-    const db = getDb();
-    const counts = await db
-      .prepare(
-        `SELECT
-           SUM(CASE WHEN ip_hash = ? AND created_at > ? THEN 1 ELSE 0 END) AS sender,
-           COUNT(*) AS site
-         FROM enquiries WHERE created_at > ?`,
-      )
-      .bind(ipHash, now - 3600, now - 86400)
-      .first<{ sender: number | null; site: number }>();
-    if ((counts?.sender ?? 0) >= RATE_LIMIT.perSenderPerHour || (counts?.site ?? 0) >= RATE_LIMIT.perSiteDay) {
-      console.warn('[contact] rate limited', { sender: counts?.sender, site: counts?.site });
-      return { status: 'error', error: 'rate' };
-    }
-
-    const res = await db
-      .prepare(
-        'INSERT INTO enquiries (created_at, name, address, postcode, contact, notes, locale, ip_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      )
-      .bind(now, name, address, postcode, contact, notes, locale, ipHash)
-      .run();
-    id = Number(res.meta.last_row_id);
+    const stored = await storeEnquiry(db, checked.value, { ipHash, locale });
+    if (!stored.ok) return { status: 'error', error: 'rate' };
+    id = stored.id;
   } catch (err) {
     console.error('[contact] could not store enquiry:', err);
     return { status: 'error', error: 'server' };
@@ -88,7 +71,7 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
       text: `Name: ${name}\nAddress: ${address}\nPostcode: ${postcode}\nContact: ${contact}\nMap: ${mapUrl}\n${notesText}\nSent from the website contact form.`,
       html: `<p><b>Name:</b> ${esc(name)}<br><b>Address:</b> ${esc(address)}<br><b>Postcode:</b> ${esc(postcode)}<br><b>Contact:</b> ${esc(contact)}<br><a href="${mapUrl}">Open in Google Maps</a></p>${notesHtml}<p>Sent from the website contact form.</p>`,
     });
-    await getDb().prepare('UPDATE enquiries SET emailed_at = ? WHERE id = ?').bind(now, id).run();
+    await markEmailed(db, id);
   } catch (err) {
     // Already stored; Sam can still be reached by the next look at the table.
     console.error('[contact] enquiry', id, 'stored but email failed:', err);

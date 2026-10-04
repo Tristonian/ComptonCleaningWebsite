@@ -14,7 +14,7 @@ local-business structured data. Exit: Lighthouse sane on a mid-range phone, Sam 
 
 ## Phase 2 — Admin
 Google sign-in (ADR 0003), sessions, allow-list. Admin mode with inline editing of text,
-prices, testimonials (overrides-only in D1, audit log). One-tap photo uploader with client-side
+prices, testimonials (overrides-only in Postgres, audit log). One-tap photo uploader with client-side
 resize to R2. WhatsApp review-request link generator. Exit: Sam changes a price on his phone.
 
 The inline editing is the LesK-style pencil (`<Ed id>` + docked inspector, ADR 0004), not a form
@@ -22,7 +22,7 @@ in a separate dashboard. **Welsh** (`/cy`, same node ids, per-language overrides
 fluent speaker) ships with Phase 2 so the pencil edits either language from day one.
 
 ## Phase 3 — Hardening and go-live
-D1 export backups to R2, security headers/CSP, rate limiting on auth routes, accessibility
+database backups (Neon history retention + scheduled export), security headers/CSP, rate limiting on auth routes, accessibility
 pass, DNS cutover, Google Business Profile and Search Console. Exit: live on the real domain.
 
 ## Later / maybe
@@ -31,6 +31,6 @@ existing customers.
 
 ## Open questions
 - Which Google account owns the Cloud project (Tristan's now, transfer later, or Sam's)?
-- D1 vs Neon (ADR 0002 is Proposed).
+- ~~D1 vs Neon~~ Decided: Neon Postgres (ADR 0005).
 - Domain registrar and current DNS; is the site on Cloudflare already?
 - Real prices, postcodes, insurance proof, review URL, photo consent.

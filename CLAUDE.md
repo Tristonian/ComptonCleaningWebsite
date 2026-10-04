@@ -31,7 +31,7 @@ planner is a separate product (WindowsWayfinder); do not merge the two.
 
 ## Architecture in one breath
 
-Next.js 15 App Router + Tailwind on Cloudflare Workers (OpenNext), D1 for content, R2 for
+Next.js 15 App Router + Tailwind on Cloudflare Workers (OpenNext), Neon Postgres for data (ADR 0005), R2 for
 photos, Google OAuth + allow-list for admin (own sessions). `main` -> production, `staging` ->
 staging. Sibling repos HairByRachel and WindowsWayfinder are the reference implementations.
 
@@ -39,7 +39,7 @@ staging. Sibling repos HairByRachel and WindowsWayfinder are the reference imple
 
 - **House style = HairByRachel.** When unsure how to do something, look there first.
 - **Money is integer pence**; format to `£` only in the UI. Times stored UTC, shown Europe/London.
-- **Content is overrides-only:** defaults in code, a D1 row only where Sam changed something.
+- **Content is overrides-only:** defaults in code, a database row only where Sam changed something.
 - **Admin is allow-listed:** a valid Google login is never enough on its own (ADR 0003).
   Every admin route and every mutation checks the session server-side.
 - **Never trust the client for the admin flag.** "Admin mode" is UI only; the API enforces.
@@ -61,7 +61,7 @@ Flag anything not yet checked on a real phone.
 
 ## Status
 
-Foundations are built and **staging is live** (https://staging.comptoncleaning.co.uk): hosting, D1,
+Foundations are built and **staging is live** (https://staging.comptoncleaning.co.uk): hosting, Neon Postgres,
 Google admin login (confirmed working), the `<Ed>` pencil, the `/cy` Welsh switch, and the one-page
 public site with a working contact form (Resend; `hello@` send/receive set up). Not yet done: photo
 upload, enquiry admin view, real reviews, and production is not deployed. What is and is not

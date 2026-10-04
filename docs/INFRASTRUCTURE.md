@@ -13,10 +13,10 @@ Things that cannot be done from code. Tick them off; record real values (never s
       plan, zone id `5994f113498e31993641a84555d8ff66`. No nameserver change needed.
 - [x] DNS reviewed: zero records. No email on the domain, nothing live.
 - [x] R2 enabled.
-- [ ] Create API token (Workers Scripts:Edit, D1:Edit, R2:Edit, DNS:Edit on the zone).
+- [ ] Create API token (Workers Scripts:Edit, R2:Edit, DNS:Edit on the zone).
       Store in GitHub secrets as `CLOUDFLARE_API_TOKEN`, plus `CLOUDFLARE_ACCOUNT_ID`.
-- [x] Created 2026-10-04 (weur): D1 `compton-cleaning` (db19280d-...) and `compton-cleaning-staging`
-      (884d35e4-...); R2 `compton-cleaning-images`, `-images-staging` (+ unused `-cache`, `-cache-staging`).
+- [x] Created 2026-10-04 (weur): D1 `compton-cleaning` and `compton-cleaning-staging` (**now unused, ADR 0005:
+      delete once Tristan is happy**); R2 `compton-cleaning-images`, `-images-staging` (+ unused `-cache`, `-cache-staging`).
 - [x] workers.dev subdomain registered: `comptoncleaning`.
 - [x] **Staging Worker deployed**: https://compton-cleaning-staging.comptoncleaning.workers.dev
       Migration 0001 applied; four secrets set (values verified non-empty through the live Worker).
@@ -64,6 +64,36 @@ Gotchas:
   dashboard under **Emails** (not Logs).
 - Free plan: 3,000/month, 100/day. The form is rate limited (see NEXT_STEPS) well inside that.
 - `ENQUIRY_TO` accepts a comma-separated list.
+
+## 3b. Neon Postgres (the database, ADR 0005)
+
+Live since 2026-10-04. Project `Compton Cleaning` (`blue-cake-35536529`) on **Sam's** Neon account,
+aws-eu-west-2 (London), database `neondb`, role `neondb_owner`. Three branches, never shared:
+
+| Branch | Used by | Connection string lives in |
+|---|---|---|
+| `production` | the production Worker (not deployed yet) | Worker secret `DATABASE_URL` (to set) |
+| `staging` | the staging Worker | Worker secret `DATABASE_URL` (set, verified) |
+| `dev` | local `npm run dev` | `.env.local` `DATABASE_URL` |
+
+- **Migrations:** `db/migrations/*.sql`, applied by `npm run db:migrate` (dev) or
+  `npm run db:migrate -- --branch staging|production` (fetches the string with the neon CLI; needs
+  `NEON_API` + `NEON_PROJECT` in `.env.local`). Idempotent, tracked in `schema_migrations`.
+- **Driver:** `@neondatabase/serverless` over HTTP from the Worker (`src/lib/db.ts`); transactions are
+  atomic (verified on the dev branch, including rollback). Tests use PGlite (real Postgres, in-process).
+- **Row-level security:** every table in `public` has it enabled, in the migration and via the
+  `ensure_rls` event trigger (`guard.rls_auto_enable()`, applied 2026-10-04) for any future table. The app
+  connects as the owner (bypasses RLS); other roles are default-deny without a policy.
+- **Switched OFF on purpose (2026-10-04):** the Neon **Data API** (deleted) and **Neon Auth** (disabled;
+  its empty `neon_auth` tables remain). Admin login is Google OAuth (ADR 0003). The roles `authenticator`,
+  `anonymous`, `authenticated` still exist from the Data API; they have no access.
+- **Secrets:** `NEON_API` was rotated by Tristan on 2026-10-04 after being used from an AI session.
+  `.env.local` also holds the pulled `NEON_*` URLs (Data API/Auth: now dead). Never commit it.
+- **Before go-live:** raise history retention (currently 6 hours), set production `DATABASE_URL`, run
+  `db:migrate -- --branch production`, and delete the now-unused D1 databases (`compton-cleaning`,
+  `compton-cleaning-staging`) on Cloudflare once Tristan agrees.
+- `neon.ts` is the empty config; `.neon` (gitignored) links this folder to the project. `neon config init`
+  added `@neon/config`; npm reports audit warnings: review before CI/go-live.
 
 ## 4. Business facts to collect from Sam
 

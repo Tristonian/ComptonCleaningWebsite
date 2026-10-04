@@ -1,6 +1,7 @@
 # ADR 0002 — Data: Cloudflare D1 for content, R2 for photos
 
-- **Status:** Proposed (confirm with Sam / Tristan 2026-10-04)
+- **Status:** D1 decisions superseded by [ADR 0005](0005-data-neon-postgres.md) (Neon Postgres). The R2 / photo
+  decisions below still stand. Kept as the record of why D1 was first chosen.
 - **Date:** 2026-10-04
 
 ## Context

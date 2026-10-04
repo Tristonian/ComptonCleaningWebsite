@@ -15,15 +15,7 @@
 		"APP_ENV": "production",
 		"SITE_URL": "https://comptoncleaning.co.uk"
 	},
-	// Created 2026-10-04 on Sam's account (location hint weur). Ids are not secrets.
-	"d1_databases": [
-		{
-			"binding": "DB",
-			"database_name": "compton-cleaning",
-			"database_id": "db19280d-cbbc-4987-a2e9-36d37ce770dd",
-			"migrations_dir": "migrations"
-		}
-	],
+	// Database: Neon Postgres (ADR 0005). DATABASE_URL is a Worker secret per environment, not a binding.
 	// Photos only (the next.js cache bucket was dropped: see open-next.config.ts).
 	"r2_buckets": [
 		{ "binding": "SITE_IMAGES", "bucket_name": "compton-cleaning-images" }
@@ -43,14 +35,6 @@
 				"SITE_URL": "https://staging.comptoncleaning.co.uk"
 			},
 			"services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "compton-cleaning-staging" }],
-			"d1_databases": [
-				{
-					"binding": "DB",
-					"database_name": "compton-cleaning-staging",
-					"database_id": "884d35e4-fd77-4766-9184-651a41b24e1b",
-					"migrations_dir": "migrations"
-				}
-			],
 			"r2_buckets": [
 				{ "binding": "SITE_IMAGES", "bucket_name": "compton-cleaning-images-staging" }
 			]

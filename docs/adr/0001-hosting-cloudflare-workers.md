@@ -17,7 +17,7 @@ a one-man window-cleaning site. Not Pages: no Cron Triggers, older adapter.
 ## Carry-overs that bit the siblings (do not relearn)
 
 - `env.staging` in `wrangler.jsonc` does **not** inherit arrays such as `r2_buckets` and
-  `d1_databases`; re-declare them or staging silently writes to production.
+  (formerly) `d1_databases`; re-declare them or staging silently writes to production.
 - Static assets bypass `next.config` `headers()`; use `public/_headers`.
 - No `VERCEL_ENV`; use an explicit `APP_ENV` var per Worker.
 - A Worker secret can exist with an **empty value** and `wrangler secret list` will not say
@@ -29,7 +29,7 @@ a one-man window-cleaning site. Not Pages: no Cron Triggers, older adapter.
 
 ## Consequences
 
-- Cheap, no commercial-use restriction, one platform for hosting, images (R2), database (D1)
+- Cheap, no commercial-use restriction, one platform for hosting, images (R2), database (D1, later Neon: ADR 0005)
   and cron.
 - Deploys go through `wrangler`/GitHub Actions with `CLOUDFLARE_API_TOKEN` and
   `CLOUDFLARE_ACCOUNT_ID`.

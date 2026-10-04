@@ -54,18 +54,20 @@ export async function GET(req: NextRequest) {
 
     // The gate that matters: Google vouching for someone is not enough.
     if (!isAllowed(claims.email, adminAllowList())) {
-      await getDb()
-        .prepare('INSERT INTO audit_log (at, email, action, detail) VALUES (?, ?, ?, ?)')
-        .bind(Math.floor(Date.now() / 1000), claims.email, 'login_denied', 'not on allow-list')
-        .run();
+      await getDb().query('INSERT INTO audit_log (email, action, detail) VALUES ($1, $2, $3)', [
+        claims.email,
+        'login_denied',
+        'not on allow-list',
+      ]);
       return fail('denied');
     }
 
     const { token, maxAge } = await createSession(claims.email);
-    await getDb()
-      .prepare('INSERT INTO audit_log (at, email, action, detail) VALUES (?, ?, ?, ?)')
-      .bind(Math.floor(Date.now() / 1000), claims.email, 'login', null)
-      .run();
+    await getDb().query('INSERT INTO audit_log (email, action, detail) VALUES ($1, $2, $3)', [
+      claims.email,
+      'login',
+      null,
+    ]);
 
     const res = NextResponse.redirect(`${siteUrl()}/admin`);
     res.cookies.set(SESSION_COOKIE, token, sessionCookieOptions(maxAge));

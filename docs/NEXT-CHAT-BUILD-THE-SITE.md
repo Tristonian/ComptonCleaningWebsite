@@ -34,7 +34,7 @@ not build on top of an assumption.
 
 ## Update (end of session 2, 2026-10-04)
 
-The public one-page site and the Resend contact form are built and deployed to staging; see
+The public one-page site and the Resend contact form are built and deployed to staging, and the data layer moved from D1 to Neon Postgres (ADR 0005, `db/migrations`, `npm run db:migrate`); see
 `docs/NEXT_STEPS.md` ("Built 2026-10-04" and "Next") and `docs/INFRASTRUCTURE.md` section 3. The
 "Not verified" list above still applies, plus: nothing has been viewed on a real phone, and the form's
 rate limit and notes field are deployed but unexercised. `.env.local` holds `RESEND_API` (sending-only key).
@@ -43,5 +43,5 @@ rate limit and notes field are deployed but unexercised. `.env.local` holds `RES
 
 > Read CLAUDE.md, docs/NEXT_STEPS.md and docs/NEXT-CHAT-BUILD-THE-SITE.md. Staging has the one-page
 > site and a working contact form. First I'll check it on my phone and tell you what I see. Then build
-> the inline photo uploader (R2, resize in the browser, content-hash keys, zoom/replace like
+> first re-verify login, a pencil save and a contact-form submit on staging after the Neon move, then the inline photo uploader (R2, resize in the browser, content-hash keys, zoom/replace like
 > HairByRachel), an admin list of enquiries for Sam with a notes field, and the area/SEO pages.

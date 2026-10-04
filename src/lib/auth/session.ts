@@ -1,7 +1,7 @@
 import 'server-only';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { getDb } from '@/lib/db';
+import { getDb, type Db } from '@/lib/db';
 import { getEnv, siteUrl } from '@/lib/env';
 import { isAllowed, parseAllowList } from './allowlist';
 import { randomToken, sha256Hex } from './crypto';
@@ -9,8 +9,6 @@ import { randomToken, sha256Hex } from './crypto';
 export const SESSION_COOKIE = 'cc_session';
 const TTL_SECONDS = 30 * 24 * 60 * 60;
 const EXTEND_BELOW_SECONDS = 15 * 24 * 60 * 60;
-
-const nowSeconds = () => Math.floor(Date.now() / 1000);
 
 export function secureCookies(): boolean {
   return siteUrl().startsWith('https://');
@@ -31,18 +29,16 @@ export function adminAllowList(): Set<string> {
 }
 
 /** Mint a session. Only the SHA-256 of the token is stored (ADR 0003). */
-export async function createSession(email: string): Promise<{ token: string; maxAge: number }> {
-  const db = getDb();
+export async function createSession(email: string, db: Db = getDb()): Promise<{ token: string; maxAge: number }> {
   const token = randomToken(32);
-  const now = nowSeconds();
-  await db.batch([
+  await db.transaction([
     // Opportunistic cleanup instead of a cron: a handful of rows, runs on every login.
-    db.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(now),
-    db
-      .prepare(
-        'INSERT INTO sessions (token_hash, email, created_at, expires_at, last_seen_at) VALUES (?, ?, ?, ?, ?)',
-      )
-      .bind(await sha256Hex(token), email, now, now + TTL_SECONDS, now),
+    { text: 'DELETE FROM sessions WHERE expires_at < now()' },
+    {
+      text: `INSERT INTO sessions (token_hash, email, created_at, expires_at, last_seen_at)
+             VALUES ($1, $2, now(), now() + make_interval(secs => $3), now())`,
+      params: [await sha256Hex(token), email, TTL_SECONDS],
+    },
   ]);
   return { token, maxAge: TTL_SECONDS };
 }
@@ -52,30 +48,31 @@ export async function createSession(email: string): Promise<{ token: string; max
  * request, so removing someone from ADMIN_ALLOWED_EMAILS locks them out immediately even though
  * their session row still exists.
  */
-export async function resolveSession(token: string | undefined): Promise<{ email: string } | null> {
+export async function resolveSession(token: string | undefined, db: Db = getDb()): Promise<{ email: string } | null> {
   if (!token) return null;
-  const db = getDb();
   const hash = await sha256Hex(token);
-  const row = await db
-    .prepare('SELECT email, expires_at FROM sessions WHERE token_hash = ?')
-    .bind(hash)
-    .first<{ email: string; expires_at: number }>();
+  const rows = await db.query<{ email: string }>(
+    'SELECT email FROM sessions WHERE token_hash = $1 AND expires_at > now()',
+    [hash],
+  );
+  const row = rows[0];
   if (!row) return null;
-  const now = nowSeconds();
-  if (row.expires_at <= now) return null;
   if (!isAllowed(row.email, adminAllowList())) return null;
 
-  const remaining = row.expires_at - now;
-  await db
-    .prepare('UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE token_hash = ?')
-    .bind(now, remaining < EXTEND_BELOW_SECONDS ? now + TTL_SECONDS : row.expires_at, hash)
-    .run();
+  // Slide the expiry forward once less than half the lifetime is left.
+  await db.query(
+    `UPDATE sessions SET last_seen_at = now(),
+         expires_at = CASE WHEN expires_at - now() < make_interval(secs => $2)
+                           THEN now() + make_interval(secs => $3) ELSE expires_at END
+       WHERE token_hash = $1`,
+    [hash, EXTEND_BELOW_SECONDS, TTL_SECONDS],
+  );
   return { email: row.email };
 }
 
-export async function deleteSession(token: string | undefined): Promise<void> {
+export async function deleteSession(token: string | undefined, db: Db = getDb()): Promise<void> {
   if (!token) return;
-  await getDb().prepare('DELETE FROM sessions WHERE token_hash = ?').bind(await sha256Hex(token)).run();
+  await db.query('DELETE FROM sessions WHERE token_hash = $1', [await sha256Hex(token)]);
 }
 
 /** The signed-in admin for this request, or null. Safe to call from any server component. */

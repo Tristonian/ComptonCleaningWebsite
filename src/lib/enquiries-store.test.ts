@@ -1,0 +1,64 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import type { PGlite } from '@electric-sql/pglite';
+import { makeTestDb } from '../../test/pg-test-db';
+import type { Db } from './db';
+import { RATE_LIMIT, checkEnquiry } from './enquiry';
+import { markEmailed, storeEnquiry } from './enquiries-store';
+
+let db: Db;
+let pg: PGlite;
+beforeEach(async () => {
+  ({ db, pg } = await makeTestDb());
+});
+
+const checked = checkEnquiry({
+  name: 'Jo',
+  address: '1 High St',
+  postcode: 'bs161aa',
+  contact: '07700 900123',
+  notes: 'Side gate',
+});
+if (!checked.ok) throw new Error('fixture invalid');
+const input = checked.value;
+
+describe('storeEnquiry', () => {
+  it('stores the enquiry with a normalised postcode and notes', async () => {
+    const r = await storeEnquiry(db, input, { ipHash: 'h1', locale: 'en' });
+    expect(r.ok).toBe(true);
+    const { rows } = await pg.query<{ postcode: string; notes: string; emailed_at: unknown }>(
+      'SELECT postcode, notes, emailed_at FROM enquiries',
+    );
+    expect(rows).toEqual([{ postcode: 'BS16 1AA', notes: 'Side gate', emailed_at: null }]);
+  });
+
+  it('rate limits one sender per hour but not a different sender', async () => {
+    for (let i = 0; i < RATE_LIMIT.perSenderPerHour; i++) {
+      expect((await storeEnquiry(db, input, { ipHash: 'same', locale: 'en' })).ok).toBe(true);
+    }
+    expect(await storeEnquiry(db, input, { ipHash: 'same', locale: 'en' })).toEqual({ ok: false, reason: 'rate' });
+    expect((await storeEnquiry(db, input, { ipHash: 'other', locale: 'en' })).ok).toBe(true);
+  });
+
+  it('an old enquiry from the same sender no longer counts after an hour', async () => {
+    for (let i = 0; i < RATE_LIMIT.perSenderPerHour; i++) {
+      await storeEnquiry(db, input, { ipHash: 'same', locale: 'en' });
+    }
+    await pg.exec("UPDATE enquiries SET created_at = now() - interval '2 hours'");
+    expect((await storeEnquiry(db, input, { ipHash: 'same', locale: 'en' })).ok).toBe(true);
+  });
+
+  it('caps the whole site per day', async () => {
+    for (let i = 0; i < RATE_LIMIT.perSiteDay; i++) {
+      await storeEnquiry(db, input, { ipHash: `sender-${i}`, locale: 'en' });
+    }
+    expect(await storeEnquiry(db, input, { ipHash: 'fresh', locale: 'en' })).toEqual({ ok: false, reason: 'rate' });
+  });
+
+  it('markEmailed stamps the row', async () => {
+    const r = await storeEnquiry(db, input, { ipHash: 'h', locale: 'cy' });
+    if (!r.ok) throw new Error('expected stored');
+    await markEmailed(db, r.id);
+    const { rows } = await pg.query<{ emailed_at: unknown }>('SELECT emailed_at FROM enquiries');
+    expect(rows[0].emailed_at).not.toBeNull();
+  });
+});

@@ -7,8 +7,10 @@ file; status is `Accepted` unless superseded.
 | # | Decision | Status |
 |---|----------|--------|
 | [0001](0001-hosting-cloudflare-workers.md) | Hosting: Cloudflare Workers via OpenNext | Accepted |
-| [0002](0002-data-d1-and-r2.md) | Data: D1 for content, R2 for photos | Proposed |
+| [0002](0002-data-d1-and-r2.md) | Data: D1 for content, R2 for photos | D1 part superseded by 0005; R2 stands |
 | [0003](0003-admin-auth-google-oauth-allowlist.md) | Admin auth: Google OAuth + allow-list, own sessions | Accepted |
 | [0004](0004-edit-anywhere-pencil-and-welsh.md) | Edit-anywhere pencil (`<Ed>`) and English/Welsh content | Accepted |
+
+| [0005](0005-data-neon-postgres.md) | Data: Neon Postgres replaces D1 (R2 stays) | Accepted |
 
 To add one: copy an existing file, take the next number, add a row above.

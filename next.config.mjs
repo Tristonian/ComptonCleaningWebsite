@@ -1,6 +1,6 @@
 import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
 
-// Gives `next dev` the wrangler.jsonc bindings (D1, R2) locally, backed by a local
+// Gives `next dev` the wrangler.jsonc bindings (R2) locally, backed by a local
 // miniflare store under .wrangler/state. No effect in production builds.
 initOpenNextCloudflareForDev();
 
