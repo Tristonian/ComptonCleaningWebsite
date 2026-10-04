@@ -4,7 +4,8 @@ The in-chat todo list doesn't survive a new session, so the live backlog lives h
 `ROADMAP.md` for direction, then pick up from this list. Keep it current.
 
 _Last updated: **2026-10-04** — scaffold, Google admin login, and the wording pencil + Welsh switch built.
-**Nothing is committed, deployed, or tested on a real phone.** No remote resources exist yet._
+Two local commits on `main` (not pushed). **Nothing is deployed or tested on a real phone.** No remote
+resources exist yet._
 
 ## Done this session
 - Cloudflare: Tristan is a member of Sam's account; `comptoncleaning.co.uk` is an active zone
@@ -23,8 +24,8 @@ _Last updated: **2026-10-04** — scaffold, Google admin login, and the wording 
       local D1 already migrated with `npm run db:migrate:local`). Expect Google's "hasn't verified
       this app" screen: Advanced -> Continue. Then `/admin` should say "Signed in as ...".
       ⚠️ Not yet verified end-to-end: only the pre-Google half and the refusal paths were driven.
-- [ ] First commit; create `staging` branch; push (repo is public: check nothing sensitive,
-      `.env.local` is ignored and verified).
+- [ ] Push `main` and `staging` (a local `staging` branch exists). Repo is public: `.env.local` is
+      ignored and verified, re-check before pushing.
 - [ ] Create remote resources on Sam's account (`CLOUDFLARE_ACCOUNT_ID` pinned in
       `wrangler.jsonc`): D1 `compton-cleaning` + `-staging`, R2 `compton-cleaning-cache`,
       `-images` and the `-staging` pair. Put real `database_id`s in `wrangler.jsonc`.
