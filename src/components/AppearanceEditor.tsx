@@ -18,15 +18,15 @@ export function AppearanceEditor() {
   const { editing } = useEditMode();
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<Data | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    setFailed(false);
+    setFailed(null);
     loadAppearanceAction()
-      .then((d) => !cancelled && (d ? setData(d) : setFailed(true)))
-      .catch(() => !cancelled && setFailed(true));
+      .then((d) => !cancelled && (d ? setData(d) : setFailed("You are not signed in as an admin. Sign in again and retry.")))
+      .catch(() => !cancelled && setFailed("The server had a problem loading this. Close it and try again in a moment."));
     return () => {
       cancelled = true;
     };
@@ -58,7 +58,7 @@ export function AppearanceEditor() {
                   Done
                 </button>
               </div>
-              {failed && <p className="text-sm font-semibold text-red-700">Could not load. Check you are signed in and try again.</p>}
+              {failed && <p className="text-sm font-semibold text-red-700">{failed}</p>}
               {!data && !failed && <p className="text-sm text-ink/70">Loading…</p>}
               {data && <AppearanceManager key={`${data.activeHash}-${data.heroColour}-${data.logos.length}`} {...data} />}
             </div>
