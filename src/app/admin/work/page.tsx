@@ -4,6 +4,8 @@ import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { listCustomers, listPaymentMethods, listRounds, todayLondon, type CustomerRow } from '@/lib/customers';
 import { endOfWeek, listDebts, listPayments } from '@/lib/jobs';
+import { WeatherWeek } from '@/components/admin/WeatherWeek';
+import { BASE, centroid, getForecast, isoWeekday } from '@/lib/weather';
 import { recordVisitAction } from '../visit-actions';
 
 export const dynamic = 'force-dynamic';
@@ -79,6 +81,16 @@ export default async function WorkPage({
   const alsoDue = round ? dueThisWeek.filter((c) => !inRound(c)) : [];
   const alsoInRound = round ? everyone.filter((c) => inRound(c) && !dueThisWeek.includes(c)) : [];
 
+  // Weather for the selected round, centred on its customers' pins (falls back to Sam's base); the round's
+  // usual weekday is outlined in the week. Fails soft: no forecast, no tile.
+  let roundWeather: Awaited<ReturnType<typeof getForecast>> = null;
+  let roundDay: string | undefined;
+  if (view === 'due' && round) {
+    const centre = centroid(everyone.filter(inRound)) ?? BASE;
+    roundWeather = await getForecast(centre.lat, centre.lng);
+    roundDay = round.weekday ? roundWeather?.find((d) => d.date >= today && isoWeekday(d.date) === round.weekday)?.date : undefined;
+  }
+
   const [debts, payments] = await Promise.all([view === 'debts' ? listDebts(db) : [], view === 'payments' ? listPayments(db) : []]);
 
   const back = `/admin/work${view !== 'due' || round ? `?${new URLSearchParams({ ...(view !== 'due' ? { view } : {}), ...(round ? { round: round.id } : {}) })}` : ''}`;
@@ -129,6 +141,8 @@ export default async function WorkPage({
                 ))}
               </nav>
             )}
+
+            {round && roundWeather && <WeatherWeek title={`Weather for ${round.name}`} days={roundWeather} today={today} highlight={roundDay} />}
 
             {due.length === 0 ? (
               <p className="rounded-xl bg-white p-6 text-center text-ink/70 ring-1 ring-ink/10">

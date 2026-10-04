@@ -2,6 +2,9 @@ import { AdminBar } from '@/components/AdminBar';
 import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { enquiryCounts } from '@/lib/enquiries-admin';
+import { todayLondon } from '@/lib/customers';
+import { BASE, getForecast } from '@/lib/weather';
+import { WeatherWeek } from '@/components/admin/WeatherWeek';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Admin', robots: { index: false, follow: false } };
@@ -16,11 +19,15 @@ export default async function AdminHome() {
     return null;
   });
 
+  const forecast = await getForecast(BASE.lat, BASE.lng);
+
   return (
     <>
       <AdminBar email={admin.email} />
       <main className="mx-auto flex max-w-xl flex-col gap-4 px-4 py-8">
         <h1 className="text-2xl font-bold text-brand-deep">Admin</h1>
+
+        {forecast && <WeatherWeek title="Weather this week, Lyde Green" days={forecast} today={todayLondon()} />}
 
         <a href="/admin/enquiries" className={tile}>
           <span className="flex items-center justify-between gap-3">
