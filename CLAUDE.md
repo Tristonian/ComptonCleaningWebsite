@@ -16,10 +16,10 @@ getting too long!` Then resume starting every message with `Tristan, ` again.
 
 ## What this is
 
-A fast, mobile-first marketing site for Sam Compton's window-cleaning business
+A fast, mobile-first marketing site and work tracker for Sam Compton's window-cleaning business
 (comptoncleaning.co.uk) with a lightweight "edit anywhere" admin so Sam can change wording,
 prices, testimonials and photos from his phone. Not a CMS, not a booking system. Sam's round
-planner is a separate product (WindowsWayfinder); do not merge the two (decided by Tristan 2026-10-04, ADR 0007).
+planner is a separate product (WindowsWayfinder) that may come later. The work tracker (customers, rounds, jobs, payments) IS built here for Sam first (ADR 0008, which supersedes ADR 0007 on this).
 
 ## Sources of truth
 

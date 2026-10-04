@@ -211,7 +211,8 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
       URI + Sam as test user, Sam reads `/privacy`, test enquiry from a phone. Still to do after: Neon history retention up,
       Mapbox usage alert, DMARC record, real reviews and Sam's real price before any marketing.
 - [ ] Real reviews (none invented), Sam's real price, before/after slider, area/SEO pages.
-- [x] WindowsWayfinder boundary decided 2026-10-04: **keep it separate** (ADR 0007). CLAUDE.md's rule stands.
+- [x] WindowsWayfinder: first said keep separate (ADR 0007), then superseded the same day: **the work tracker is built here for Sam first** (ADR 0008); the route planner itself may come later, separately.
+- [ ] **Work tracker, slice 1 built 2026-10-04 (committed, NOT deployed, NOT migrated on staging/production; UNVERIFIED in a browser):** migration 0010, customers list (search, Due / Owing / round filters, call, text, WhatsApp, "coming tomorrow" text), add customer with Grab location, edit, delete (type "delete"), Squeegee CSV import, rounds (customer in many). To ship: `npm run db:migrate -- --branch staging` then deploy staging, try it, then production. **Still to build:** work tracker screen (Due this week by round, DONE panel with defaults, Missed, extras, payment method, date, photos, Debts, Payments), Templates screen (on/off, edit, rich editor for emails; SMSWorks later), weather on the admin home (Open-Meteo), drag-to-order within a round, invoices later.
 - [x] Real-device checks of sessions 2-3 (contact form, location/pin, logo and colour, blocks, own services, hide/show):
       Tristan reports all good on a real phone (2026-10-04). Sam's own login on a phone is still worth one look.
 - [x] Sam's Gmail "send as" `hello@` with his own Resend key: done (Tristan, 2026-10-04).

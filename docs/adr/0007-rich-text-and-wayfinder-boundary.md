@@ -30,7 +30,7 @@
   stayed at about 126 kB first load.
 - Rich nodes render in a `div`, whatever `as` says, because paragraphs cannot nest in a `<p>`.
 
-### WindowsWayfinder
+### WindowsWayfinder (superseded by ADR 0008 the same day: the work tracker is built here after all; the route planner itself is still separate)
 - **Stays a separate product.** The round planner is not built into this repo. CLAUDE.md's
   "do not merge the two" stands. Tristan decided this 2026-10-04 after it had been left open as
   "the planner stalled and might come here for Sam first". If a link-out or shared data is ever wanted,

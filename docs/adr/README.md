@@ -15,4 +15,5 @@ file; status is `Accepted` unless superseded.
 
 To add one: copy an existing file, take the next number, add a row above.
 | [0006](0006-page-blocks-photos-and-text.md) | Page blocks: photos and text Sam can place and arrange | Accepted |
-| [0007](0007-rich-text-and-wayfinder-boundary.md) | Rich text for body copy (blank lines kept); WindowsWayfinder stays separate | Accepted |
+| [0007](0007-rich-text-and-wayfinder-boundary.md) | Rich text for body copy (blank lines kept); WindowsWayfinder paragraph superseded by 0008 | Accepted |
+| [0008](0008-work-tracker-in-this-repo.md) | The work tracker (customers, rounds, jobs) is built in this repo, for Sam first | Accepted |
