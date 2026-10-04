@@ -42,8 +42,8 @@ pushed to GitHub**._
 - One-page site from Sam's sketch: hero (CCS card style, hamburger), About (no heading), Services,
   Prices, Contact, Reviews (with Sam's Google review link, `REVIEW_URL` in `src/lib/business.ts`);
   sticky anchor bar. All text is `<Ed>` with draft Welsh. Hero is a CSS approximation of the card.
-- Contact form (name, address, contact, optional notes): stored in D1 `enquiries` first
-  (migrations 0002 + 0003, applied to staging), then emailed through **Resend** (`src/lib/mail.ts`,
+- Contact form (name, address, postcode, contact, optional notes): stored in D1 `enquiries` first
+  (migrations 0002-0004, applied to staging), then emailed through **Resend** (`src/lib/mail.ts`,
   plain fetch) from `enquiry@comptoncleaning.co.uk` to `ENQUIRY_TO` (Sam only on staging).
   **Verified end to end on staging** (enquiry arrived in an inbox). Abuse controls: honeypot, field
   limits, rate limit 3/hour per sender (salted IP hash) and 40/day site-wide (`RATE_LIMIT` in
@@ -51,6 +51,39 @@ pushed to GitHub**._
 - Sending as / receiving at `hello@` works (see `INFRASTRUCTURE.md` section 3).
 - Enquiries are only in D1 and email: there is **no admin view of them yet**.
   Query: `wrangler d1 execute compton-cleaning-staging --remote --env staging --command "SELECT * FROM enquiries"`.
+
+### Added later in session 2 (all on staging)
+- Logo: the card artwork (`public/ccs-logo.png`) replaces the CSS wordmark; its edges are feathered
+  into the hero gradient (`.hero`, `.logo-feather` in `globals.css`). Low-res: ask Sam for the vector/original.
+- **Welsh switch bug fixed**: `LangSwitch` was a `next/link`; soft navigation kept the layout's old
+  language. It is now a plain `<a>` (full load). Do not turn it back into a `Link`.
+- Hamburger is a fixed bubble (follows the scroll); the pencil's Edit button moved to bottom-right.
+- Contact shortcuts: Call, Text (sms:), WhatsApp (`WHATSAPP_URL`, assumes the number is on WhatsApp:
+  confirm with Sam), Email (`mailto:hello@`).
+- Form: separate **postcode** (validated UK shape, stored normalised; migration 0004), notes, and a
+  Google Maps search link in the enquiry email (no API key).
+- **Tested at 375px (local dev frame) and via the form**: layout, bubble, no horizontal scroll; 3
+  enquiries accepted, the 4th rate-limited with the on-page message. Still not tested on a real phone.
+  Dev only: `next.config.mjs` omits `X-Frame-Options` in development so the site can be framed at
+  phone width; production still sends DENY (verified on staging).
+
+### Ideas from Tristan, not built
+- [ ] **Detect my location** as an alternative to typing: a "Use my location" button ->
+      `navigator.geolocation` -> reverse-geocode to a postcode (free, key-less: postcodes.io) -> fills
+      postcode/address. Needs `geolocation=(self)` in the `Permissions-Policy` header (currently `()`),
+      and a graceful fallback when permission is denied. A postcode centroid is not a house, so Sam
+      still gets the typed address.
+- [ ] **Map pin to confirm** the location, included in the enquiry email. Options: Google Maps JS +
+      Geocoding (best UK address accuracy; needs a Google Cloud billing account and a referrer-restricted
+      key; there is a monthly free allowance per product, check current pricing) vs key-less
+      OpenStreetMap/Leaflet tiles + postcodes.io (free, postcode-level). WindowsWayfinder has NOT chosen
+      a maps provider (its NEXT_STEPS lists Google vs Mapbox as an open question): decide once, together.
+      Loading Google scripts also affects the privacy/cookie wording.
+- [ ] **Achievements** like HairByRachel (`src/lib/achievements*.ts` there): later.
+- Database access control: D1 has no RLS (that is Postgres/Supabase/Neon). Not needed: D1 is only
+  reachable through the Worker binding, never from the browser. Keep it that way: only server actions
+  and admin routes (each re-checking `getAdmin()`) may read `enquiries`; never add a public read route.
+  Don't move to Neon just for RLS.
 
 ### Next (in order)
 - [ ] Look at staging on a real phone: hero, hamburger, sticky bar, form, then exercise the rate limit.

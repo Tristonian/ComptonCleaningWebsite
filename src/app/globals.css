@@ -19,6 +19,20 @@ body {
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Hero: colours sampled from the card artwork (public/ccs-logo.png) so its own background melts
+   into the page; the artwork's outer edge fades out so there is no visible rectangle. */
+.hero {
+  background: linear-gradient(135deg, #3da9bd 0%, #2fadc2 45%, #12b0c7 100%);
+}
+.logo-feather {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent),
+    linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent);
+  mask-composite: intersect;
+}
+
 /* Edit mode (the pencil). Outline only, never border/padding: outlines paint outside the box and
    do not take part in layout, so selecting text can never reflow the page being edited. */
 [data-ed] {

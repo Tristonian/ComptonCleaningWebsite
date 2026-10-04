@@ -28,6 +28,17 @@ export function ContactForm() {
         <input name="address" required maxLength={300} autoComplete="street-address" className={field} />
       </label>
       <label className="flex flex-col gap-1 text-sm font-semibold">
+        <Ed id="contact.form.postcode">Postcode</Ed>
+        <input
+          name="postcode"
+          required
+          maxLength={10}
+          autoComplete="postal-code"
+          autoCapitalize="characters"
+          className={field}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-sm font-semibold">
         <Ed id="contact.form.contact">Contact number / email</Ed>
         <input name="contact" required maxLength={120} autoComplete="tel" className={field} />
       </label>
@@ -42,7 +53,12 @@ export function ContactForm() {
           Too many messages just now. Please give us a call or text instead.
         </Ed>
       )}
-      {state.status === 'error' && state.error !== 'rate' && (
+      {state.status === 'error' && state.error === 'postcode' && (
+        <Ed id="contact.form.postcode.error" as="p" className="text-sm font-semibold text-red-700">
+          Please enter a full UK postcode, like BS16 1AA.
+        </Ed>
+      )}
+      {state.status === 'error' && state.error !== 'rate' && state.error !== 'postcode' && (
         <Ed id="contact.form.error" as="p" className="text-sm font-semibold text-red-700">
           Please check your details and try again, or give us a call.
         </Ed>

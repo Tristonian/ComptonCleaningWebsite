@@ -3,6 +3,8 @@
 export const PHONE_DISPLAY = '07756 355758';
 export const PHONE_TEL = 'tel:+447756355758';
 export const PHONE_SMS = 'sms:+447756355758';
+/** Assumes the business number is on WhatsApp: confirm with Sam. */
+export const WHATSAPP_URL = 'https://wa.me/447756355758';
 
 /** Sam's Google Business Profile "leave a review" link (public). */
 export const REVIEW_URL = 'https://g.page/r/CTjrcltzLlOVEBM/review';

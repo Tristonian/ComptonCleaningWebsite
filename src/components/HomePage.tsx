@@ -1,7 +1,16 @@
 import { Ed } from '@/components/Ed';
 import { ContactForm } from '@/components/ContactForm';
 import { HeroMenu, StickyBar } from '@/components/SiteNav';
-import { FIRST_CLEAN_PENCE, PHONE_DISPLAY, PHONE_SMS, PHONE_TEL, REVIEW_URL, formatPence } from '@/lib/business';
+import {
+  EMAIL_FROM,
+  FIRST_CLEAN_PENCE,
+  PHONE_DISPLAY,
+  PHONE_SMS,
+  PHONE_TEL,
+  REVIEW_URL,
+  WHATSAPP_URL,
+  formatPence,
+} from '@/lib/business';
 
 const section = 'mx-auto max-w-2xl scroll-mt-14 px-4 py-10';
 const h2 = 'mb-4 text-3xl font-black uppercase italic tracking-tight text-brand-deep';
@@ -11,14 +20,20 @@ export function HomePage() {
   return (
     <main>
       {/* Hero: the business card. CCS, the squeegee, the web address, the phone number. */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-brand-deep via-brand to-[#14b8cf] px-4 pb-12 pt-20 text-center text-white">
+      <header className="hero relative overflow-hidden px-4 pb-10 pt-16 text-center text-white">
         <HeroMenu />
-        <div className="mx-auto flex max-w-sm items-center justify-center gap-2">
-          <Ed id="brand.name" as="h1" className="text-8xl font-black italic leading-none tracking-tighter">
-            CCS
-          </Ed>
-          <Squeegee />
-        </div>
+        {/* The business card artwork. Its own teal background is feathered into the hero's. */}
+        <Ed id="brand.name" as="h1" className="sr-only">
+          Compton Cleaning Services
+        </Ed>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/ccs-logo.png"
+          alt=""
+          width={741}
+          height={389}
+          className="logo-feather mx-auto w-full max-w-sm"
+        />
         <Ed id="brand.web" as="p" className="mt-3 text-lg font-bold tracking-wide">
           ComptonCleaning.co.uk
         </Ed>
@@ -109,12 +124,21 @@ export function HomePage() {
         <Ed id="contact.intro" as="p" className="mb-3">
           Contact via text or call
         </Ed>
-        <div className="mb-6 flex gap-3">
-          <a href={PHONE_TEL} className="flex-1 rounded-xl bg-brand-deep px-4 py-3 text-center font-bold text-white">
-            <Ed id="nav.call">Call</Ed> {PHONE_DISPLAY}
-          </a>
-          <a href={PHONE_SMS} className="rounded-xl px-4 py-3 font-bold text-brand-deep ring-2 ring-brand-deep">
+        <a
+          href={PHONE_TEL}
+          className="mb-3 block rounded-xl bg-brand-deep px-4 py-3 text-center text-lg font-bold text-white"
+        >
+          <Ed id="nav.call">Call</Ed> {PHONE_DISPLAY}
+        </a>
+        <div className="mb-6 grid grid-cols-3 gap-3 text-center font-bold text-brand-deep">
+          <a href={PHONE_SMS} className="rounded-xl px-2 py-3 ring-2 ring-brand-deep">
             <Ed id="nav.text">Text</Ed>
+          </a>
+          <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="rounded-xl px-2 py-3 ring-2 ring-brand-deep">
+            <Ed id="nav.whatsapp">WhatsApp</Ed>
+          </a>
+          <a href={`mailto:${EMAIL_FROM}`} className="rounded-xl px-2 py-3 ring-2 ring-brand-deep">
+            <Ed id="nav.email">Email</Ed>
           </a>
         </div>
         <Ed id="contact.form.title" as="h3" className="mb-3 text-xl font-bold">
@@ -146,16 +170,5 @@ export function HomePage() {
         </Ed>
       </footer>
     </main>
-  );
-}
-
-/** The squeegee from the card: a handle, a head, a blade. Decorative. */
-function Squeegee() {
-  return (
-    <svg viewBox="0 0 60 110" className="h-24 w-auto" aria-hidden fill="currentColor">
-      <rect x="22" y="0" width="5" height="70" rx="2" transform="rotate(8 24 35)" />
-      <rect x="2" y="52" width="56" height="12" rx="2" transform="rotate(-8 30 58)" />
-      <rect x="18" y="70" width="6" height="38" rx="2" transform="rotate(8 21 89)" />
-    </svg>
   );
 }

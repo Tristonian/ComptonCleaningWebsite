@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkEnquiry } from './enquiry';
 
-const good = { name: 'Jo', address: '1 High St, BS16 1AA', contact: '07700 900123' };
+const good = { name: 'Jo', address: '1 High St', postcode: 'bs161aa', contact: '07700 900123' };
 
 describe('checkEnquiry', () => {
   it('accepts a phone number or an email', () => {
@@ -24,5 +24,19 @@ describe('checkEnquiry', () => {
     expect(none.ok && none.value.notes).toBe('');
     const some = checkEnquiry({ ...good, notes: 'Side gate\r\n\r\n\r\n\r\nDogs  in garden ' });
     expect(some.ok && some.value.notes).toBe('Side gate\n\nDogs in garden');
+  });
+});
+
+describe('postcode', () => {
+  it('is normalised to upper case with one space', () => {
+    const r = checkEnquiry(good);
+    expect(r.ok && r.value.postcode).toBe('BS16 1AA');
+    const r2 = checkEnquiry({ ...good, postcode: ' np16  5xy ' });
+    expect(r2.ok && r2.value.postcode).toBe('NP16 5XY');
+  });
+  it('is required and must look like a UK postcode', () => {
+    expect(checkEnquiry({ ...good, postcode: '' })).toEqual({ ok: false, error: 'missing' });
+    expect(checkEnquiry({ ...good, postcode: 'hello' })).toEqual({ ok: false, error: 'postcode' });
+    expect(checkEnquiry({ ...good, postcode: '12345' })).toEqual({ ok: false, error: 'postcode' });
   });
 });

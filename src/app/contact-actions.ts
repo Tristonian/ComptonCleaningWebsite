@@ -25,6 +25,7 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
   const checked = checkEnquiry({
     name: form.get('name'),
     address: form.get('address'),
+    postcode: form.get('postcode'),
     contact: form.get('contact'),
     notes: form.get('notes'),
   });
@@ -33,7 +34,7 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
   const h = await headers();
   const requested = h.get('x-locale');
   const locale = isLocale(requested) ? requested : 'en';
-  const { name, address, contact, notes } = checked.value;
+  const { name, address, postcode, contact, notes } = checked.value;
   const now = Math.floor(Date.now() / 1000);
 
   const ip = h.get('cf-connecting-ip') ?? h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
@@ -58,9 +59,9 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
 
     const res = await db
       .prepare(
-        'INSERT INTO enquiries (created_at, name, address, contact, notes, locale, ip_hash) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO enquiries (created_at, name, address, postcode, contact, notes, locale, ip_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       )
-      .bind(now, name, address, contact, notes, locale, ipHash)
+      .bind(now, name, address, postcode, contact, notes, locale, ipHash)
       .run();
     id = Number(res.meta.last_row_id);
   } catch (err) {
@@ -76,14 +77,16 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
 
   try {
     const isEmail = contact.includes('@');
+    // A plain Maps search link: no API key, opens the Maps app on a phone.
+    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, ${postcode}`)}`;
     const notesText = notes ? `\nNotes:\n${notes}\n` : '';
     const notesHtml = notes ? `<p><b>Notes:</b><br>${esc(notes).replace(/\n/g, '<br>')}</p>` : '';
     await sendMail({
       to,
       ...(isEmail ? { replyTo: contact } : {}),
       subject: `New enquiry from ${name}`,
-      text: `Name: ${name}\nAddress: ${address}\nContact: ${contact}\n${notesText}\nSent from the website contact form.`,
-      html: `<p><b>Name:</b> ${esc(name)}<br><b>Address:</b> ${esc(address)}<br><b>Contact:</b> ${esc(contact)}</p>${notesHtml}<p>Sent from the website contact form.</p>`,
+      text: `Name: ${name}\nAddress: ${address}\nPostcode: ${postcode}\nContact: ${contact}\nMap: ${mapUrl}\n${notesText}\nSent from the website contact form.`,
+      html: `<p><b>Name:</b> ${esc(name)}<br><b>Address:</b> ${esc(address)}<br><b>Postcode:</b> ${esc(postcode)}<br><b>Contact:</b> ${esc(contact)}<br><a href="${mapUrl}">Open in Google Maps</a></p>${notesHtml}<p>Sent from the website contact form.</p>`,
     });
     await getDb().prepare('UPDATE enquiries SET emailed_at = ? WHERE id = ?').bind(now, id).run();
   } catch (err) {

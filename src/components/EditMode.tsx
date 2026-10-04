@@ -191,7 +191,7 @@ function PencilToggle() {
       onClick={() => setEditing(!editing)}
       aria-pressed={editing}
       aria-label={editing ? 'Stop editing' : 'Edit this page'}
-      className={`fixed right-3 top-3 z-[60] flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg backdrop-blur print:hidden ${
+      className={`fixed bottom-4 right-3 z-[60] flex h-11 items-center gap-2 rounded-full px-4 text-sm font-semibold shadow-lg backdrop-blur print:hidden ${
         editing ? 'bg-brand text-white' : 'bg-white/90 text-brand-deep ring-1 ring-ink/10'
       }`}
     >
