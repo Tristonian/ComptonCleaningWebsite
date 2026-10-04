@@ -10,7 +10,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { Locale } from '@/lib/content/shared';
 import { resetNodeAction, saveNodeAction } from '@/app/actions';
 import { Inspector } from '@/components/Inspector';
@@ -185,6 +185,8 @@ export function EditModeProvider({
 /** The floating pencil. Rendered only for signed-in admins. */
 function PencilToggle() {
   const { editing, setEditing } = useEditMode();
+  // The admin screens are not editable text: the pencil would only get in the way there.
+  if ((usePathname() ?? '').startsWith('/admin')) return null;
   return (
     <button
       type="button"

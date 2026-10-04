@@ -8,7 +8,8 @@ import type { Db, Statement } from '../src/lib/db';
  * code is tested against the actual schema, constraints and RLS statements (ADR 0005).
  */
 export async function makeTestDb(): Promise<{ db: Db; pg: PGlite }> {
-  const pg = new PGlite();
+  // Neon's driver returns bigint (int8) as a string; make PGlite do the same so tests match production.
+  const pg = new PGlite({ parsers: { 20: (v: string) => v } });
   const dir = path.resolve(__dirname, '../db/migrations');
   for (const f of readdirSync(dir).filter((n) => n.endsWith('.sql')).sort()) {
     await pg.exec(readFileSync(path.join(dir, f), 'utf8'));

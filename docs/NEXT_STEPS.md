@@ -110,6 +110,21 @@ pushed to GitHub**._
 - Logo is white-on-transparent (`public/ccs-logo.png`, original in `docs/assets/`): no soft edge.
 - Pushed to GitHub (`origin`): `main` and `staging`. No workflows exist yet, so pushing deploys nothing.
 
+### Enquiry inbox in /admin (session 2): built; tested locally against a real database, NOT on a real device
+- `/admin` is a dashboard: **Enquiries** (with an unread count), **See the site**, "Back to the website" bar on every
+  admin page. `/admin/enquiries` lists them (filter chips by status with counts, unread dots, newest first).
+  `/admin/enquiries/[id]` shows: Call / Text / WhatsApp / Email buttons, the job (service, where they heard of us,
+  their notes), address with the **confirmed pin on a map** plus Open in Maps and Directions, a status selector
+  (New / Contacted / Quoted / Booked / Lost), Sam's **private notes**, a **Reply** form (templates, sent as
+  `hello@`, replies land back in his inbox; each is logged on the enquiry), and **Add as a customer**.
+- Data: migration 0005 (`enquiries.status/admin_notes/read_at/customer_id`, `customers`, `enquiry_replies`, RLS on).
+  Logic in `src/lib/enquiries-admin.ts` (unit tested on PGlite, which now returns bigint as strings like Neon);
+  actions in `src/app/admin/enquiries/actions.ts` re-check `getAdmin()` every time.
+- Verified in a browser at 375px with a minted dev session: list, filters, detail, status change, notes, add as
+  customer (idempotent), phone-only enquiry (no reply form). **NOT verified: actually sending a reply** (it would
+  email a real address; the send path is the same Resend call as the enquiry email), a real Google login, a phone.
+- Reply templates are code (`src/lib/reply-templates.ts`): editing them in the admin is the "template emails" idea.
+
 ### Sam's tracker / planner: ideas from Tristan (not started; read before designing)
 Tristan's goal: get this working **for Sam first**. WindowsWayfinder has stalled; much of its idea set
 (rounds, planner, payments) now belongs here. ⚠️ CLAUDE.md and ADR 0005 still say "do not merge the two":
@@ -119,6 +134,18 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
 - **Work planner with a start/done timer** so Sam can see how long jobs really take (feeds pricing).
 - **Cancellations:** record how often customers cancel, to estimate how many of a round might cancel and
   feed that into **estimated earnings** (expected vs booked).
+- **Prices with a house animation** (Tristan): small / medium / large house; as you scroll the price counts up and the
+  house animates, windows going from dull to sparkly. Respect `prefers-reduced-motion` (show the final state), keep
+  it light (CSS/SVG, no big library), prices from `business.ts` / `<Ed>` so Sam can edit them, no sound.
+- **Location ideas (Tristan) - read the privacy notes before building anything:**
+  - "Track Sam all day to show which location he is near" (for him, in the admin): a website cannot track in the
+    background reliably; it needs an installed app/PWA with Sam opting in, or he taps "I'm here". Only Sam sees it,
+    shown as the nearest customer/round, short retention, and a switch to turn it off. UK GDPR applies if anyone
+    other than Sam is ever tracked.
+  - "Where has Sam been this week on the front page": **do not show a real location history on the public site.**
+    It tells strangers when he is away and where, and can point at customers' homes. If wanted, show only a coarse,
+    delayed, opt-in line such as "This week: BS16, BS5, Chepstow" built from completed jobs (postcode districts),
+    never GPS points, never live, never a street.
 - **Weather forecast in the planner/admin** (Tristan, 2026-10-04): rain, wind and frost for the week and
   per round/day, so Sam can move jobs (rain matters for windows, wind/ice for ladders and gutters).
   Likely free, key-less source to evaluate first: Open-Meteo (needs lat/lng, which the confirmed pin
@@ -175,11 +202,8 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
       settings row in Postgres (logo key, hero colour), served with immutable cache headers (ADR 0002 still
       governs R2). `public/ccs-logo.png` is the default; `docs/assets/ccs-logo-original.png` is the source.
       Same uploader then serves the photo slots in Services and the gallery.
-- [ ] **Enquiry inbox in /admin** (Tristan 2026-10-04): read enquiries (name, service, source, address with the
-      pin map, phone/email), mark status (new / contacted / quoted / booked / lost), **reply from the admin**
-      (Resend, sent as `hello@`, replies land in Sam's inbox), keep Sam's own **notes**, and **add as customer**.
-      This is the first real admin feature and the seed of the tracker below (customers, properties with lat/lng,
-      rounds, jobs). Every route behind `getAdmin()`; RLS stays on.
+- [x] **Enquiry inbox in /admin**: built (see above). Still to add: mark-as-spam/archive, search, a customers list page,
+      unread badge on the nav, reply templates editable in the admin.
 - [ ] Production: `db:migrate -- --branch production`, secrets (`DATABASE_URL`, `RESEND_API`, `ENQUIRY_TO`,
       `MAPBOX_TOKEN`, Google OAuth, `SESSION_SECRET` new), DNS for the apex, www redirect, privacy policy (must
       mention Mapbox + postcodes.io + Resend), Neon history retention up, Mapbox usage alert.

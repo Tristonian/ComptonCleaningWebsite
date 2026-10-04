@@ -17,6 +17,8 @@ export interface Mail {
   html: string;
   replyTo?: string;
   inline?: InlineImage[];
+  /** Sender. Defaults to the website notification address (enquiry@). Replies to customers use hello@. */
+  from?: { address: string; name: string };
 }
 
 /**
@@ -28,13 +30,15 @@ export interface Mail {
 export async function sendMail(mail: Mail): Promise<void> {
   const key = getEnv('RESEND_API');
   if (!key) throw new Error('RESEND_API is missing or empty');
-  const address = getEnv('MAIL_FROM') ?? NOTIFY_FROM;
+  // MAIL_FROM wins for everything (testing before the domain is verified), then the caller's choice.
+  const address = getEnv('MAIL_FROM') ?? mail.from?.address ?? NOTIFY_FROM;
+  const name = mail.from?.name ?? 'Compton Cleaning website';
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: `Compton Cleaning website <${address}>`,
+      from: `${name} <${address}>`,
       // `to` may be a comma-separated list (ENQUIRY_TO="sam@..., someone@...").
       to: mail.to.split(',').map((a) => a.trim()).filter(Boolean),
       subject: mail.subject,

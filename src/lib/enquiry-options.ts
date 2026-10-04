@@ -18,7 +18,7 @@ export const SERVICES: readonly Option[] = [
   { value: 'pressure-washing', en: 'Pressure washing (patios, drives)', cy: 'Golchi dan bwysau (patios, dreifiau)' },
   { value: 'render-cleaning', en: 'Render cleaning', cy: 'Glanhau rendr' },
   { value: 'conservatory', en: 'Conservatory or glass roof', cy: 'Conservatory neu do gwydr' },
-  { value: 'other', en: 'Something else / not sure', cy: 'Rhywbeth arall / ddim yn siŵr' },
+  { value: 'other', en: 'Something else', cy: 'Rhywbeth arall' },
 ];
 
 /** How they found Sam. Optional for the customer. */
