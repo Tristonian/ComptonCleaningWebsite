@@ -1,6 +1,7 @@
 import { Ed } from '@/components/Ed';
 import { ContactForm } from '@/components/ContactForm';
 import { getEnv } from '@/lib/env';
+import { AppearanceEditor } from '@/components/AppearanceEditor';
 import { HeroHeader } from '@/components/HeroHeader';
 import { HeroMenu, StickyBar } from '@/components/SiteNav';
 import { getAppearance } from '@/lib/appearance';
@@ -31,18 +32,22 @@ export async function HomePage() {
       {/* Hero: the business card. CCS, the squeegee, the web address, the phone number. */}
       <HeroHeader colour={appearance.heroColour}>
         <HeroMenu />
+        <AppearanceEditor />
         <Ed id="brand.name" as="h1" className="sr-only">
           Compton Cleaning Services
         </Ed>
-        {/* The active logo: Sam's upload (R2) or the shipped card artwork. Admin: /admin/appearance. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={appearance.logo.src}
-          alt=""
-          width={appearance.logo.width}
-          height={appearance.logo.height}
-          className="hero-logo"
-        />
+        {/* The active logo: Sam's upload (R2) or the shipped card artwork. Admin: /admin/appearance.
+            Tapping it (most useful once it has shrunk into the bar) goes back to the top of the page. */}
+        <a href="#" aria-label="Back to the top" className="block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={appearance.logo.src}
+            alt=""
+            width={appearance.logo.width}
+            height={appearance.logo.height}
+            className="hero-logo"
+          />
+        </a>
         <a
           href={PHONE_TEL}
           className="hero-fade mx-auto mt-5 flex w-fit items-center gap-2 bg-white px-4 py-2 text-2xl font-bold text-brand-deep"

@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getAdmin } from '@/lib/auth/session';
 import { MAX_LOGO_BYTES, pngSize } from '@/lib/appearance-shared';
-import { addLogo, removeLogo, setActiveLogo, setHeroColour, type Result } from '@/lib/appearance';
+import { addLogo, getAppearance, listLogos, removeLogo, setActiveLogo, setHeroColour, type Result } from '@/lib/appearance';
+import { getDb } from '@/lib/db';
 
 /**
  * Server actions behind /admin/appearance. These are HTTP endpoints, so EVERY one re-checks the
@@ -84,4 +85,15 @@ export async function setHeroColourAction(colour: string | null): Promise<Result
   const result = await setHeroColour(colour, admin.email);
   if (result.ok) refresh();
   return result;
+}
+
+/** For the pencil's "Logo and colour" sheet on the public page: loaded on open, admin only. */
+export async function loadAppearanceAction(): Promise<
+  { logos: { hash: string; label: string }[]; activeHash: string | null; heroColour: string | null } | null
+> {
+  const admin = await getAdmin();
+  if (!admin) return null;
+  const db = getDb();
+  const [{ logos, activeHash }, { heroColour }] = await Promise.all([listLogos(db), getAppearance(db)]);
+  return { logos: logos.map((l) => ({ hash: l.hash, label: l.label })), activeHash, heroColour };
 }
