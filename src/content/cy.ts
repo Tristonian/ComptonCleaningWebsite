@@ -80,4 +80,4 @@ export const cy: Record<string, string> = {
 };
 
 /** Ids whose wording is deliberately identical in both languages (names, brands, numbers). */
-export const SAME_IN_BOTH = new Set<string>(['brand.name', 'brand.web', 'nav.whatsapp', 'prices.first.amount']);
+export const SAME_IN_BOTH = new Set<string>(['brand.name', 'nav.whatsapp', 'prices.first.amount']);

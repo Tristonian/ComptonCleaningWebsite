@@ -12,7 +12,7 @@ export function HeroMenu() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <div className="absolute left-4 top-4 z-40 rounded-full bg-white">
+      <div className="hero-fade absolute left-4 top-4 z-40 rounded-full bg-white">
         <LangSwitch />
       </div>
       {/* A bubble fixed to the viewport: it follows the reader down the page. */}
@@ -40,7 +40,7 @@ export function HeroMenu() {
 
 export function StickyBar() {
   return (
-    <nav className="sticky top-0 z-30 border-b border-ink/10 bg-white/90 backdrop-blur">
+    <nav className="sticky top-11 z-30 border-b border-ink/10 bg-white/90 backdrop-blur">
       {/* Right padding keeps the links clear of the fixed menu bubble. */}
       <ul className="mx-auto flex max-w-2xl justify-around pl-2 pr-16 text-sm font-bold text-brand-deep">
         <NavItems />

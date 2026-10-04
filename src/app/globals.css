@@ -22,7 +22,28 @@ body {
 /* Hero background: colours sampled from the card artwork (docs/assets/ccs-logo-original.png). The
    logo itself (public/ccs-logo.png) is white on transparent, so no edge needs blending. */
 .hero {
-  background: linear-gradient(135deg, #3da9bd 0%, #2fadc2 45%, #12b0c7 100%);
+  /* --p is scroll progress 0 -> 1, set by HeroHeader. --hero-bg is Sam's chosen colour (admin). */
+  --p: 0;
+  background: var(--hero-bg, linear-gradient(135deg, #3da9bd 0%, #2fadc2 45%, #12b0c7 100%));
+  padding-top: calc(4rem - 3.25rem * var(--p));
+  padding-bottom: calc(2.5rem * (1 - var(--p)));
+  box-shadow: 0 1px 6px rgb(0 0 0 / calc(0.18 * var(--p)));
+}
+
+/* The logo shrinks to 10% of its width by the time the header is a bar. */
+.hero-logo {
+  display: block;
+  margin-inline: auto;
+  height: auto;
+  width: calc(min(100%, 24rem) * (1 - 0.9 * var(--p)));
+}
+
+/* Phone number, tagline and language switch fade out as the header collapses. */
+.hero-fade {
+  opacity: max(0, calc(1 - var(--p) * 3));
+}
+.hero[data-collapsed='1'] .hero-fade {
+  visibility: hidden;
 }
 
 /* Edit mode (the pencil). Outline only, never border/padding: outlines paint outside the box and

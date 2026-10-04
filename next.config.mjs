@@ -7,6 +7,7 @@ initOpenNextCloudflareForDev();
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: { serverActions: { bodySizeLimit: "4mb" } },
   poweredByHeader: false,
   async headers() {
     return [

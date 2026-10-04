@@ -34,6 +34,11 @@ export default async function AdminHome() {
           </span>
         </a>
 
+        <a href="/admin/appearance" className={tile}>
+          <span className="text-xl font-black text-brand-deep">Logo and colour</span>
+          <span className="text-sm text-ink/70">Upload and switch the logo at the top of the site, and change the header colour.</span>
+        </a>
+
         <a href="/" className={tile}>
           <span className="text-xl font-black text-brand-deep">See the site</span>
           <span className="text-sm text-ink/70">

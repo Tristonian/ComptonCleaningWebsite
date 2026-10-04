@@ -193,12 +193,14 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
       `ENQUIRY_TO` to Tristan for the test), the email in Gmail on a phone, "Use my location" with a real
       permission prompt, pinch zoom and wheel zoom on the map (the test browser froze on wheel events, so wheel
       zoom is UNTESTED), the sent confirmation, the hamburger/sticky bar, the Welsh switch.
-- [ ] **Logo upload + colour picker in the admin/pencil** (Tristan 2026-10-04): a file picker with a
-      lightbox cropper so Sam can replace the main logo, and a colour picker for the colour around it (hero
-      background). R2 storage with content-hash keys, resize/crop in the browser before upload, admin-only API,
-      settings row in Postgres (logo key, hero colour), served with immutable cache headers (ADR 0002 still
-      governs R2). `public/ccs-logo.png` is the default; `docs/assets/ccs-logo-original.png` is the source.
-      Same uploader then serves the photo slots in Services and the gallery.
+- [x] **Logo upload + colour picker** (built 2026-10-04, UNVERIFIED in a browser/phone): `/admin/appearance`
+      (upload -> cropper adapted from HairByRachel -> PNG -> R2 `logo/<sha256>`, served by `/img/[hash]`;
+      pick/delete logos; hero colour picker with contrast warning). Tables `site_images`, `site_settings`
+      (migration 0006: run `npm run db:migrate` on each branch). Hero now collapses on scroll (`HeroHeader`):
+      logo to 10%, thin pinned bar, nav sticks at `top-11`. The website line under the logo was removed.
+- [ ] **Free-placement images + movable text** (Tristan 2026-10-04): Sam adds photos (guttering, windows,
+      pressure washing...) wherever he wants, several at once, and moves blocks of text/images around, no fixed
+      slots. Needs a block model (ordered blocks per section) and a design decision against "not a CMS": see chat.
 - [x] **Enquiry inbox in /admin**: built (see above). Still to add: mark-as-spam/archive, search, a customers list page,
       unread badge on the nav, reply templates editable in the admin.
 - [ ] Production: `db:migrate -- --branch production`, secrets (`DATABASE_URL`, `RESEND_API`, `ENQUIRY_TO`,

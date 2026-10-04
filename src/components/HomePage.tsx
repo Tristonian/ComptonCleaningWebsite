@@ -1,7 +1,9 @@
 import { Ed } from '@/components/Ed';
 import { ContactForm } from '@/components/ContactForm';
 import { getEnv } from '@/lib/env';
+import { HeroHeader } from '@/components/HeroHeader';
 import { HeroMenu, StickyBar } from '@/components/SiteNav';
+import { getAppearance } from '@/lib/appearance';
 import {
   EMAIL_FROM,
   FIRST_CLEAN_PENCE,
@@ -23,37 +25,35 @@ const h2 = 'mb-4 text-3xl font-black uppercase italic tracking-tight text-brand-
  */
 export async function HomePage() {
   const mapboxToken = getEnv('MAPBOX_TOKEN');
+  const appearance = await getAppearance();
   return (
     <main>
       {/* Hero: the business card. CCS, the squeegee, the web address, the phone number. */}
-      <header className="hero relative overflow-hidden px-4 pb-10 pt-16 text-center text-white">
+      <HeroHeader colour={appearance.heroColour}>
         <HeroMenu />
-        {/* The business card artwork, white on a transparent background (docs/assets has the original). */}
         <Ed id="brand.name" as="h1" className="sr-only">
           Compton Cleaning Services
         </Ed>
+        {/* The active logo: Sam's upload (R2) or the shipped card artwork. Admin: /admin/appearance. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/ccs-logo.png"
+          src={appearance.logo.src}
           alt=""
-          width={1482}
-          height={778}
-          className="mx-auto w-full max-w-sm"
+          width={appearance.logo.width}
+          height={appearance.logo.height}
+          className="hero-logo"
         />
-        <Ed id="brand.web" as="p" className="mt-3 text-lg font-bold tracking-wide">
-          ComptonCleaning.co.uk
-        </Ed>
         <a
           href={PHONE_TEL}
-          className="mx-auto mt-5 flex w-fit items-center gap-2 bg-white px-4 py-2 text-2xl font-bold text-brand-deep"
+          className="hero-fade mx-auto mt-5 flex w-fit items-center gap-2 bg-white px-4 py-2 text-2xl font-bold text-brand-deep"
         >
           <span aria-hidden>📞</span>
           <span>{PHONE_DISPLAY}</span>
         </a>
-        <Ed id="brand.tagline" as="p" className="mt-5 text-sm font-bold uppercase tracking-widest">
+        <Ed id="brand.tagline" as="p" className="hero-fade mt-5 text-sm font-bold uppercase tracking-widest">
           Windows | Gutters | Patios
         </Ed>
-      </header>
+      </HeroHeader>
 
       <StickyBar />
 
