@@ -14,7 +14,8 @@ type Photo = { id: string; hash: string };
  */
 export function VisitPhotos({ jobId, photos, max }: { jobId: string; photos: Photo[]; max: number }) {
   const router = useRouter();
-  const input = useRef<HTMLInputElement>(null);
+  const gallery = useRef<HTMLInputElement>(null);
+  const camera = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -86,9 +87,21 @@ export function VisitPhotos({ jobId, photos, max }: { jobId: string; photos: Pho
         </ul>
       )}
       {photos.length < max && (
-        <>
+        <div className="mt-2 flex flex-wrap gap-2">
           <input
-            ref={input}
+            ref={camera}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            capture="environment"
+            hidden
+            onChange={(e) => {
+              const picked = [...(e.target.files ?? [])];
+              e.target.value = '';
+              if (picked.length) void upload(picked);
+            }}
+          />
+          <input
+            ref={gallery}
             type="file"
             accept="image/png,image/jpeg,image/webp"
             multiple
@@ -102,12 +115,20 @@ export function VisitPhotos({ jobId, photos, max }: { jobId: string; photos: Pho
           <button
             type="button"
             disabled={!!busy}
-            onClick={() => input.current?.click()}
-            className="mt-2 rounded-xl px-4 py-3 text-sm font-bold text-brand-deep ring-2 ring-brand-deep/40 disabled:opacity-60"
+            onClick={() => camera.current?.click()}
+            className="rounded-xl px-4 py-3 text-sm font-bold text-brand-deep ring-2 ring-brand-deep/40 disabled:opacity-60"
           >
-            📷 Add photos
+            📷 Take photo
           </button>
-        </>
+          <button
+            type="button"
+            disabled={!!busy}
+            onClick={() => gallery.current?.click()}
+            className="rounded-xl px-4 py-3 text-sm font-bold text-brand-deep ring-2 ring-brand-deep/40 disabled:opacity-60"
+          >
+            🖼️ From gallery
+          </button>
+        </div>
       )}
       {busy && <p role="status" className="mt-1 text-sm text-ink/70">{busy}</p>}
       {error && <p role="alert" className="mt-1 text-sm font-semibold text-red-800">{error}</p>}
