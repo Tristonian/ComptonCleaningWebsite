@@ -144,6 +144,9 @@ export default async function WorkPage({
           {tab('due', 'Due this week', dueThisWeek.length)}
           {tab('debts', 'Debts', everyone.filter((c) => c.owingPence > 0).length)}
           {tab('payments', 'Payments')}
+          <a href="/admin/earnings" className="whitespace-nowrap rounded-full px-3 py-2 text-sm font-bold text-brand-deep ring-1 ring-brand-deep/40">
+            📈 Earnings
+          </a>
         </nav>
 
         {view === 'due' && (

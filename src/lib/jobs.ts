@@ -111,8 +111,8 @@ export async function recordJob(
   try {
     const rows = await db.query<{ id: string }>(
       `WITH j AS (
-         INSERT INTO jobs (customer_id, status, done_on, price_pence, payment_method, paid, notes, created_by)
-         SELECT id, $2, $3::date, $4, $5, $6, $7, $8 FROM customers WHERE id = $1
+         INSERT INTO jobs (customer_id, status, done_on, price_pence, payment_method, paid, paid_on, notes, created_by)
+         SELECT id, $2, $3::date, $4, $5, $6::boolean, CASE WHEN $6::boolean THEN $3::date END, $7, $8 FROM customers WHERE id = $1
          RETURNING id
        ), e AS (${EXTRAS_SQL})
        SELECT id::text AS id FROM j`,
@@ -137,7 +137,8 @@ export async function updateJob(jobId: unknown, input: JobInput, by: string, db:
   try {
     const rows = await db.query<{ id: string }>(
       `WITH j AS (
-         UPDATE jobs SET status = $2, done_on = $3::date, price_pence = $4, payment_method = $5, paid = $6, notes = $7
+         UPDATE jobs SET status = $2, done_on = $3::date, price_pence = $4, payment_method = $5, paid = $6::boolean, notes = $7,
+                paid_on = CASE WHEN $6::boolean THEN coalesce(paid_on, $3::date) END
           WHERE id = $1 RETURNING id
        ), d AS (DELETE FROM job_extras WHERE job_id IN (SELECT id FROM j)),
        e AS (INSERT INTO job_extras (job_id, label, price_pence)
@@ -156,12 +157,12 @@ export async function updateJob(jobId: unknown, input: JobInput, by: string, db:
 }
 
 /** Record that a debt was paid (or that a visit was paid after the event), and how. */
-export async function markPaid(jobId: unknown, method: unknown, by: string, db: Db = getDb()): Promise<Result> {
+export async function markPaid(jobId: unknown, method: unknown, by: string, db: Db = getDb(), today: string = todayLondon()): Promise<Result> {
   if (!/^\d+$/.test(String(jobId))) return { ok: false, error: 'Unknown visit.' };
   const key = String(method ?? '').trim();
   if (!key || !(await methodKeys(db)).has(key)) return { ok: false, error: 'Choose how they paid.' };
   try {
-    const rows = await db.query(`UPDATE jobs SET paid = true, payment_method = $2 WHERE id = $1 AND status = 'done' RETURNING id`, [jobId, key]);
+    const rows = await db.query(`UPDATE jobs SET paid = true, paid_on = coalesce(paid_on, $3::date), payment_method = $2 WHERE id = $1 AND status = 'done' RETURNING id`, [jobId, key, today]);
     if (rows.length === 0) return { ok: false, error: 'That visit no longer exists.' };
     const a = audit(by, 'job_paid', { id: String(jobId) });
     await db.query(a.text, a.params);

@@ -23,7 +23,7 @@ export function AdminTabs() {
   const path = usePathname() ?? '';
   const inside = (href: string) => path === href || path.startsWith(`${href}/`);
   const active = (href: string) =>
-    href === '/admin' ? path === '/admin' : href === '/admin/settings' ? SETTINGS_PATHS.some(inside) : inside(href);
+    href === '/admin' ? path === '/admin' : href === '/admin/settings' ? SETTINGS_PATHS.some(inside) : href === '/admin/work' ? inside(href) || inside('/admin/earnings') : inside(href);
   return (
     <nav aria-label="Admin" className="admin-tabs fixed inset-x-0 bottom-0 z-20 border-t border-ink/10 bg-white/95 backdrop-blur print:hidden">
       <div className="mx-auto grid max-w-2xl grid-cols-6">

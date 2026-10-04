@@ -51,6 +51,11 @@ export default async function AdminHome() {
           <span className="text-sm text-ink/70">Who is due, who owes, call or text in one tap. Add customers, import from Squeegee.</span>
         </a>
 
+        <a href="/admin/earnings" className={tile}>
+          <span className="text-xl font-black text-brand-deep">Earnings</span>
+          <span className="text-sm text-ink/70">Money received by day, week and month, how people paid, top extras and customers, what is still owed.</span>
+        </a>
+
         <a href="/admin/calendar" className={tile}>
           <span className="text-xl font-black text-brand-deep">Calendar</span>
           <span className="text-sm text-ink/70">Schedule your rounds, and set the days and hours the website offers the Call button.</span>
