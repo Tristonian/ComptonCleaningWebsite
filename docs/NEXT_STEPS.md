@@ -3,7 +3,7 @@
 The in-chat todo list doesn't survive a new session, so the live backlog lives here. Read
 `ROADMAP.md` for direction, then pick up from this list. Keep it current.
 
-_Last updated: **2026-10-04** — scaffold + Google admin login built and smoke-tested locally.
+_Last updated: **2026-10-04** — scaffold, Google admin login, and the wording pencil + Welsh switch built.
 **Nothing is committed, deployed, or tested on a real phone.** No remote resources exist yet._
 
 ## Done this session
@@ -36,10 +36,20 @@ _Last updated: **2026-10-04** — scaffold + Google admin login built and smoke-
 - [ ] Add Tristan as Owner on the Google Cloud project (IAM) if not already done.
 - [ ] Publish the Google consent screen once the site has a homepage + privacy policy URL.
 
+## Built, awaiting a real-browser check
+- [x] Pencil (`<Ed id>`, `EditMode`, bottom-sheet `Inspector`, server actions) - wording only.
+      Store logic tested against the real migration (11 tests); build passes; with a forged
+      local session the pencil shows for admins and not for visitors.
+      ⚠️ **Never driven in a browser**: tapping text, typing, Save and Revert have not been
+      done by a human. Sign in locally, tap Edit, change the heading, Save, reload.
+- [x] Welsh: `/cy`, switch, `src/content/cy.ts`, `x-locale` middleware, coverage test that fails
+      if an `<Ed id>` has no Welsh entry. ⚠️ **Welsh is machine-drafted**; a fluent speaker must
+      review before launch. Still to do: hreflang alternates + sitemap entries.
+
 ## Then (Phase 1/2, see ROADMAP)
-- [ ] `<Ed id>` pencil + inspector + `saveNode` server action (ADR 0004), English first.
-- [ ] Welsh: `/cy` routes, language switch, `src/content/cy.ts`, hreflang; **a fluent speaker must
-      review the wording before launch**.
+- [ ] Pencil v2 if wanted: typography + site theme tabs (LesK has them: `style.ts`, `Inspector`).
+- [ ] The layout is dynamic (reads cookies + D1 per request). Fine at this size; add tag-based
+      caching if it is ever measurably slow.
 - [ ] Public pages, pricing, postcode checker, before/after slider, photo uploader (resize before
       upload), WhatsApp review link.
 - [ ] Business facts from Sam: prices, postcodes, WhatsApp number, insurer + cover amount, Google
