@@ -19,3 +19,5 @@ To add one: copy an existing file, take the next number, add a row above.
 | [0008](0008-work-tracker-in-this-repo.md) | The work tracker (customers, rounds, jobs) is built in this repo, for Sam first | Accepted |
 | [0009](0009-weather-and-visit-photos.md) | Weather from Open-Meteo (server-side, cached, fail soft); visit photos share R2 with page photos | Accepted |
 | [0010](0010-templates-overrides-and-plain-text-email.md) | Templates: overrides-only per field, off means gone, emails stay plain text | Accepted |
+| [0011](0011-calendar-call-hours-and-earnings.md) | Calendar and call hours (the public Call button follows them), Earnings reports with `paid_on` | Accepted |
+| [0012](0012-route-planner-in-this-repo.md) | Route planner built here: Mapbox Matrix drive times, exact/2-opt solver, falls back to estimates | Accepted |
