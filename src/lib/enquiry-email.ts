@@ -1,4 +1,4 @@
-import type { EnquiryInput } from './enquiry';
+import { formatPhone, type EnquiryInput } from './enquiry';
 
 export type PinKind = 'pin' | 'postcode' | 'none';
 
@@ -28,7 +28,9 @@ export function buildEnquiryEmail(args: {
 
   const notesText = input.notes ? `\nNotes:\n${input.notes}\n` : '';
   const text =
-    `Name: ${input.name}\nAddress: ${input.address}\nPostcode: ${input.postcode}\nContact: ${input.contact}\n` +
+    `Name: ${input.name}\nAddress: ${input.address}\nPostcode: ${input.postcode}\n` +
+    (input.phone ? `Phone: ${formatPhone(input.phone)} (tap to call: tel:${input.phone})\n` : '') +
+    (input.email ? `Email: ${input.email}\n` : '') +
     `\n${pinText}\nOpen in Google Maps: ${mapUrl}\nDirections: ${directionsUrl}\n${notesText}\nSent from the website contact form.`;
 
   const button = (href: string, label: string, solid: boolean) =>
@@ -39,7 +41,10 @@ export function buildEnquiryEmail(args: {
   const html =
     `<div style="font:16px/1.5 Arial,sans-serif;color:#0f2131;max-width:640px">` +
     `<p><b>Name:</b> ${esc(input.name)}<br><b>Address:</b> ${esc(input.address)}<br>` +
-    `<b>Postcode:</b> ${esc(input.postcode)}<br><b>Contact:</b> ${esc(input.contact)}</p>` +
+    `<b>Postcode:</b> ${esc(input.postcode)}` +
+    (input.phone ? `<br><b>Phone:</b> <a href="tel:${input.phone}">${esc(formatPhone(input.phone))}</a>` : '') +
+    (input.email ? `<br><b>Email:</b> <a href="mailto:${esc(input.email)}">${esc(input.email)}</a>` : '') +
+    `</p>` +
     (hasMapImage
       ? `<p style="margin:0 0 4px"><a href="${mapUrl}"><img src="cid:map" alt="Map of the customer's location" width="600" style="width:100%;max-width:600px;border-radius:10px;border:1px solid #cfd8dc"></a></p>`
       : '') +

@@ -1,6 +1,6 @@
 import 'server-only';
 import type { Db } from '@/lib/db';
-import { RATE_LIMIT, type EnquiryInput } from '@/lib/enquiry';
+import { RATE_LIMIT, formatPhone, type EnquiryInput } from '@/lib/enquiry';
 
 export type StoreResult = { ok: true; id: string } | { ok: false; reason: 'rate' };
 
@@ -27,13 +27,15 @@ export async function storeEnquiry(
   }
 
   const [row] = await db.query<{ id: string }>(
-    `INSERT INTO enquiries (name, address, postcode, contact, notes, locale, ip_hash, lat, lng)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+    `INSERT INTO enquiries (name, address, postcode, contact, phone, email, notes, locale, ip_hash, lat, lng)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
     [
       input.name,
       input.address,
       input.postcode,
-      input.contact,
+      [input.phone ? formatPhone(input.phone) : '', input.email].filter(Boolean).join(' / '),
+      input.phone,
+      input.email,
       input.notes,
       meta.locale,
       meta.ipHash,

@@ -15,7 +15,8 @@ const checked = checkEnquiry({
   name: 'Jo',
   address: '1 High St',
   postcode: 'bs161aa',
-  contact: '07700 900123',
+  phone: '07700 900123',
+  email: 'Jo@Example.com',
   notes: 'Side gate',
   lat: '51.5121',
   lng: '-2.5111',
@@ -31,6 +32,18 @@ describe('storeEnquiry', () => {
       'SELECT postcode, notes, emailed_at FROM enquiries',
     );
     expect(rows).toEqual([{ postcode: 'BS16 1AA', notes: 'Side gate', emailed_at: null }]);
+  });
+
+  it('stores phone and email separately, plus a readable contact line', async () => {
+    await storeEnquiry(db, input, { ipHash: 'p', locale: 'en' });
+    const { rows } = await pg.query<{ contact: string; phone: string; email: string }>('SELECT contact, phone, email FROM enquiries');
+    expect(rows).toEqual([{ contact: '07700 900123 / jo@example.com', phone: '+447700900123', email: 'jo@example.com' }]);
+  });
+
+  it('the database refuses a row with no way to reach the customer', async () => {
+    await expect(
+      pg.query("INSERT INTO enquiries (name,address,contact,locale) VALUES ('a','b','','en')"),
+    ).rejects.toThrow();
   });
 
   it('stores the confirmed pin, and null when there is none', async () => {

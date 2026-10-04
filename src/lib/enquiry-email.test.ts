@@ -6,7 +6,8 @@ const checked = checkEnquiry({
   name: 'Jo <b>Bloggs</b>',
   address: '1 High St',
   postcode: 'bs161aa',
-  contact: '07700 900123',
+  phone: '07700 900123',
+  email: 'jo@example.com',
   notes: 'Side gate\nDog "Rex"',
   lat: '51.5121',
   lng: '-2.5111',
@@ -27,6 +28,23 @@ describe('buildEnquiryEmail', () => {
     expect(e.html).toContain('Pin confirmed by the customer');
     expect(e.text).toContain(base.mapUrl);
     expect(e.text).toContain(base.directionsUrl);
+  });
+
+  it('shows the phone and email as tap-to-call and tap-to-write links', () => {
+    const e = buildEnquiryEmail({ ...base, pinKind: 'pin', hasMapImage: true });
+    expect(e.html).toContain('href="tel:+447700900123"');
+    expect(e.html).toContain('07700 900123');
+    expect(e.html).toContain('href="mailto:jo@example.com"');
+    expect(e.text).toContain('Phone: 07700 900123');
+    expect(e.text).toContain('Email: jo@example.com');
+  });
+
+  it('leaves out whichever of phone and email was not given', () => {
+    const only = checkEnquiry({ name: 'Jo', address: 'a', postcode: 'bs161aa', phone: '07700 900123' });
+    if (!only.ok) throw new Error('fixture');
+    const e = buildEnquiryEmail({ ...base, input: only.value, pinKind: 'none', hasMapImage: false });
+    expect(e.html).not.toContain('Email:');
+    expect(e.html).toContain('Phone:');
   });
 
   it('leaves the image out when it could not be fetched, but keeps the links', () => {

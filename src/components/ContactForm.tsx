@@ -1,35 +1,44 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useActionState, useRef, useState } from 'react';
+import { useActionState, useRef, useState, type FormEvent } from 'react';
 import { Ed } from '@/components/Ed';
 import { sendEnquiry, type ContactState } from '@/app/contact-actions';
+import { normaliseEmail, normalisePhone, normalisePostcode } from '@/lib/enquiry';
 import { isPlausibleUkPoint, type LatLng } from '@/lib/geo';
 
 // Loaded only when a pin is first shown: the map library is large.
 const PinMap = dynamic(() => import('@/components/PinMap').then((m) => m.PinMap), { ssr: false });
 
 const field = 'w-full rounded-lg border border-ink/20 bg-white px-3 py-3 text-base text-ink';
-const POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
+const fieldBad = 'border-red-600 ring-1 ring-red-600';
+const errorText = 'text-sm font-semibold text-red-700';
 
 type Locating = 'idle' | 'working' | 'denied' | 'failed';
 
 /**
- * Contact form with an optional location helper: "Use my location" (browser geolocation, then a
- * free postcode lookup) and a draggable Mapbox pin to confirm the spot. Everything about location
- * is optional: a visitor can ignore it, or the helper can fail, and typing still works.
+ * Contact form with a location helper: "Use my location" (browser geolocation, then a free
+ * postcode lookup) and a Mapbox pin the customer must tap or drag to confirm. If the map cannot
+ * be shown (no token, blocked, no WebGL) or there is no pin yet, nothing is forced and typing
+ * still works. Phone, email and postcode are checked as they type; the server checks them again.
  */
 export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
   const [state, action, pending] = useActionState<ContactState, FormData>(sendEnquiry, { status: 'idle' });
   const [address, setAddress] = useState('');
   const [postcode, setPostcode] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [touched, setTouched] = useState({ phone: false, email: false, postcode: false });
+  const [attempted, setAttempted] = useState(false);
   const [point, setPoint] = useState<LatLng | null>(null);
   // Only a pin the visitor moved, or a location their device reported, is sent as coordinates. A
   // pin that just sits at the middle of the typed postcode is a guess, so Sam is not told it is confirmed.
   const [confirmed, setConfirmed] = useState(false);
   const [mapBroken, setMapBroken] = useState(false);
+  const [postcodeUnknown, setPostcodeUnknown] = useState(false);
   const [locating, setLocating] = useState<Locating>('idle');
   const lookedUp = useRef('');
+  const mapBox = useRef<HTMLDivElement>(null);
 
   if (state.status === 'sent') {
     return (
@@ -39,21 +48,35 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
     );
   }
 
+  const mapShown = Boolean(point && mapboxToken && !mapBroken);
+  const needsPin = mapShown && !confirmed;
+
+  const phoneBad = phone.trim() !== '' && !normalisePhone(phone);
+  const emailBad = email.trim() !== '' && !normaliseEmail(email);
+  const postcodeBad = postcode.trim() !== '' && !normalisePostcode(postcode);
+  const noContact = phone.trim() === '' && email.trim() === '';
+  const showPhoneBad = phoneBad && (touched.phone || attempted);
+  const showEmailBad = emailBad && (touched.email || attempted);
+  const showPostcodeBad = (postcodeBad && (touched.postcode || attempted)) || postcodeUnknown;
+  const showNoContact = noContact && attempted;
+
   /** Turn a typed postcode into a point for the map (postcodes.io: free, no key). */
   async function lookUpPostcode(raw: string) {
-    const clean = raw.trim().toUpperCase().replace(/\s+/g, '');
-    if (!POSTCODE.test(clean) || lookedUp.current === clean) return;
+    const clean = normalisePostcode(raw).replace(/\s+/g, '');
+    if (!clean || lookedUp.current === clean) return;
     lookedUp.current = clean;
     try {
       const res = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(clean)}`);
+      if (res.status === 404) return setPostcodeUnknown(true);
       if (!res.ok) return;
       const { result } = (await res.json()) as { result?: { latitude: number; longitude: number } };
+      setPostcodeUnknown(false);
       if (result && isPlausibleUkPoint(result.latitude, result.longitude)) {
         setPoint({ lat: result.latitude, lng: result.longitude });
         setConfirmed(false);
       }
     } catch {
-      // Offline or blocked: the typed postcode is still submitted.
+      // Offline or blocked: the typed postcode is still submitted and the server decides.
     }
   }
 
@@ -67,7 +90,7 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
         setPoint(here);
         setConfirmed(true);
         setLocating('idle');
-        await fillFromPoint(here, { replaceAddress: false });
+        await fillFromPoint(here);
       },
       (err) => setLocating(err.code === err.PERMISSION_DENIED ? 'denied' : 'failed'),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
@@ -75,23 +98,22 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
   }
 
   /** Fill the postcode (and an empty address) from a point: postcodes.io, then Mapbox. */
-  async function fillFromPoint(p: LatLng, opts: { replaceAddress: boolean }) {
+  async function fillFromPoint(p: LatLng) {
     try {
-      const res = await fetch(
-        `https://api.postcodes.io/postcodes?lon=${p.lng}&lat=${p.lat}&limit=1&radius=300`,
-      );
+      const res = await fetch(`https://api.postcodes.io/postcodes?lon=${p.lng}&lat=${p.lat}&limit=1&radius=300`);
       if (res.ok) {
         const { result } = (await res.json()) as { result?: { postcode: string }[] | null };
         const found = result?.[0]?.postcode;
         if (found) {
           lookedUp.current = found.replace(/\s+/g, '');
           setPostcode(found);
+          setPostcodeUnknown(false);
         }
       }
     } catch {
       // Ignore: the visitor can type it.
     }
-    if (!mapboxToken || (address.trim() && !opts.replaceAddress)) return;
+    if (!mapboxToken || address.trim()) return;
     try {
       const res = await fetch(
         `https://api.mapbox.com/search/geocode/v6/reverse?longitude=${p.lng}&latitude=${p.lat}&types=address&limit=1&access_token=${encodeURIComponent(mapboxToken)}`,
@@ -105,8 +127,19 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
     }
   }
 
+  /** Stop the send, and say why, if anything is wrong or the pin is unconfirmed. */
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
+    setAttempted(true);
+    const invalid = phoneBad || emailBad || postcodeBad || postcodeUnknown || noContact;
+    if (invalid) return e.preventDefault();
+    if (needsPin) {
+      e.preventDefault();
+      mapBox.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }
+
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form action={action} onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       <label className="flex flex-col gap-1 text-sm font-semibold">
         <Ed id="contact.form.name">Name</Ed>
         <input name="name" required maxLength={100} autoComplete="name" className={field} />
@@ -143,6 +176,7 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
           onChange={(e) => setAddress(e.target.value)}
         />
       </label>
+
       <label className="flex flex-col gap-1 text-sm font-semibold">
         <Ed id="contact.form.postcode">Postcode</Ed>
         <input
@@ -151,61 +185,141 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
           maxLength={10}
           autoComplete="postal-code"
           autoCapitalize="characters"
-          className={field}
+          aria-invalid={showPostcodeBad || undefined}
+          className={`${field} ${showPostcodeBad ? fieldBad : ''}`}
           value={postcode}
           onChange={(e) => {
             setPostcode(e.target.value);
+            setPostcodeUnknown(false);
             void lookUpPostcode(e.target.value);
           }}
-          onBlur={(e) => void lookUpPostcode(e.target.value)}
+          onBlur={(e) => {
+            setTouched((t) => ({ ...t, postcode: true }));
+            void lookUpPostcode(e.target.value);
+          }}
         />
       </label>
+      {showPostcodeBad && (
+        <Ed id="contact.form.postcode.error" as="p" className={errorText}>
+          Please enter a real, full UK postcode, like BS16 1AA.
+        </Ed>
+      )}
 
-      {point && mapboxToken && !mapBroken && (
-        <div className="flex flex-col gap-2">
+      {mapShown && point && mapboxToken && (
+        <div ref={mapBox} className="flex flex-col gap-2">
           <PinMap
             token={mapboxToken}
             point={point}
             onMove={(p) => {
               setPoint(p);
               setConfirmed(true);
-              void fillFromPoint(p, { replaceAddress: false });
+              void fillFromPoint(p);
             }}
             onFail={() => setMapBroken(true)}
           />
-          <Ed id="contact.loc.drag" as="p" className="text-sm text-ink/80">
-            Drag the pin to your front door, or tap the map. It helps Sam find you.
-          </Ed>
+          {confirmed ? (
+            <Ed id="contact.loc.confirmed" as="p" className="rounded-lg bg-brand/10 px-3 py-2 text-sm font-semibold text-brand-deep">
+              ✓ Location confirmed. Thank you.
+            </Ed>
+          ) : (
+            <Ed
+              id="contact.loc.confirm"
+              as="p"
+              className={`rounded-lg px-3 py-2 text-sm font-semibold ${attempted ? 'bg-red-50 text-red-700 ring-1 ring-red-600' : 'bg-amber-50 text-amber-900 ring-1 ring-amber-400'}`}
+            >
+              Please tap the map or drag the pin onto your home to confirm where we’re going, then send.
+            </Ed>
+          )}
         </div>
       )}
       <input type="hidden" name="lat" value={point && confirmed ? String(point.lat) : ''} />
       <input type="hidden" name="lng" value={point && confirmed ? String(point.lng) : ''} />
 
-      <label className="flex flex-col gap-1 text-sm font-semibold">
-        <Ed id="contact.form.contact">Contact number / email</Ed>
-        <input name="contact" required maxLength={120} autoComplete="tel" className={field} />
-      </label>
+      <div className="flex flex-col gap-1">
+        <Ed id="contact.form.either" as="p" className="text-sm text-ink/80">
+          How can we reach you? A phone number or an email: at least one.
+        </Ed>
+        <label className="flex flex-col gap-1 text-sm font-semibold">
+          <Ed id="contact.form.phone">Phone</Ed>
+          <input
+            name="phone"
+            type="tel"
+            inputMode="tel"
+            maxLength={30}
+            autoComplete="tel"
+            placeholder="07700 900123"
+            aria-invalid={showPhoneBad || undefined}
+            className={`${field} ${showPhoneBad || showNoContact ? fieldBad : ''}`}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
+          />
+        </label>
+        {showPhoneBad && (
+          <Ed id="contact.form.phone.error" as="p" className={errorText}>
+            That doesn’t look like a UK phone number. Try 07700 900123.
+          </Ed>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <label className="flex flex-col gap-1 text-sm font-semibold">
+          <Ed id="contact.form.email">Email</Ed>
+          <input
+            name="email"
+            type="email"
+            inputMode="email"
+            maxLength={254}
+            autoComplete="email"
+            autoCapitalize="none"
+            placeholder="you@example.com"
+            aria-invalid={showEmailBad || undefined}
+            className={`${field} ${showEmailBad || showNoContact ? fieldBad : ''}`}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+          />
+        </label>
+        {showEmailBad && (
+          <Ed id="contact.form.email.error" as="p" className={errorText}>
+            That email address doesn’t look right. Please check it.
+          </Ed>
+        )}
+      </div>
+      {showNoContact && (
+        <Ed id="contact.form.contact.error" as="p" className={errorText}>
+          Please give us a phone number or an email so we can reply.
+        </Ed>
+      )}
+
       <label className="flex flex-col gap-1 text-sm font-semibold">
         <Ed id="contact.form.notes">Notes (optional)</Ed>
         <textarea name="notes" rows={4} maxLength={1000} className={field} />
       </label>
       {/* Honeypot, hidden from people and assistive tech. */}
       <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
+
       {state.status === 'error' && state.error === 'rate' && (
-        <Ed id="contact.form.rate" as="p" className="text-sm font-semibold text-red-700">
+        <Ed id="contact.form.rate" as="p" className={errorText}>
           Too many messages just now. Please give us a call or text instead.
         </Ed>
       )}
-      {state.status === 'error' && state.error === 'postcode' && (
-        <Ed id="contact.form.postcode.error" as="p" className="text-sm font-semibold text-red-700">
-          Please enter a full UK postcode, like BS16 1AA.
+      {state.status === 'error' && state.error === 'postcode-unknown' && (
+        <Ed id="contact.form.postcode.unknown" as="p" className={errorText}>
+          We couldn’t find that postcode. Please check it, or give us a call.
         </Ed>
       )}
-      {state.status === 'error' && state.error !== 'rate' && state.error !== 'postcode' && (
-        <Ed id="contact.form.error" as="p" className="text-sm font-semibold text-red-700">
-          Please check your details and try again, or give us a call.
+      {state.status === 'error' && state.error === 'email-domain' && (
+        <Ed id="contact.form.email.domain" as="p" className={errorText}>
+          We couldn’t find that email’s domain. Please check the spelling, or use your phone number.
         </Ed>
       )}
+      {state.status === 'error' &&
+        !['rate', 'postcode-unknown', 'email-domain'].includes(state.error) && (
+          <Ed id="contact.form.error" as="p" className={errorText}>
+            Please check your details and try again, or give us a call.
+          </Ed>
+        )}
       <button
         type="submit"
         disabled={pending}

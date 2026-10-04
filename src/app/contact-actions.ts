@@ -6,6 +6,7 @@ import { getDb } from '@/lib/db';
 import { getEnv, siteUrl } from '@/lib/env';
 import { sendMail } from '@/lib/mail';
 import { checkEnquiry } from '@/lib/enquiry';
+import { emailDomainCanReceive, postcodeExists } from '@/lib/verify';
 import { directionsLink, mapsLink } from '@/lib/geo';
 import { buildEnquiryEmail } from '@/lib/enquiry-email';
 import { fetchMapImage, postcodeCentre } from '@/lib/map-image';
@@ -31,7 +32,8 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
     name: form.get('name'),
     address: form.get('address'),
     postcode: form.get('postcode'),
-    contact: form.get('contact'),
+    phone: form.get('phone'),
+    email: form.get('email'),
     notes: form.get('notes'),
     lat: form.get('lat'),
     lng: form.get('lng'),
@@ -41,7 +43,16 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
   const h = await headers();
   const requested = h.get('x-locale');
   const locale = isLocale(requested) ? requested : 'en';
-  const { address, postcode, contact, point } = checked.value;
+  const { address, postcode, email, point } = checked.value;
+
+  // Verify the postcode is real and the email's domain can receive mail. Both fail open: a lookup
+  // service being down must never turn a real customer away, only a clear "no" does.
+  const [postcodeOk, emailOk] = await Promise.all([
+    postcodeExists(postcode),
+    email ? emailDomainCanReceive(email) : Promise.resolve(true),
+  ]);
+  if (postcodeOk === false) return { status: 'error', error: 'postcode-unknown' };
+  if (emailOk === false) return { status: 'error', error: 'email-domain' };
 
   const ip = h.get('cf-connecting-ip') ?? h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   const ipHash = await sha256Hex(`${getEnv('SESSION_SECRET') ?? ''}|enquiry|${ip}`);
@@ -64,12 +75,11 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
   }
 
   try {
-    const isEmail = contact.includes('@');
     // The map picture: the confirmed pin, else the centre of the postcode (labelled approximate).
     const centre = point ? null : await postcodeCentre(postcode);
     const mapPoint = point ?? centre;
     const image = mapPoint ? await fetchMapImage(mapPoint, getEnv('MAPBOX_TOKEN'), siteUrl()) : null;
-    const email = buildEnquiryEmail({
+    const message = buildEnquiryEmail({
       input: checked.value,
       mapUrl: mapsLink({ address, postcode, point }),
       directionsUrl: directionsLink({ address, postcode, point }),
@@ -78,8 +88,8 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
     });
     await sendMail({
       to,
-      ...(isEmail ? { replyTo: contact } : {}),
-      ...email,
+      ...(email ? { replyTo: email } : {}),
+      ...message,
       ...(image ? { inline: [image] } : {}),
     });
     await markEmailed(db, id);

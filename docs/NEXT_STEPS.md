@@ -85,6 +85,41 @@ pushed to GitHub**._
   before the Google consent screen is published) must say so. Mapbox's free allowance is ~50k map loads
   and 100k geocoding requests a month (check current pricing); set a usage alert in the Mapbox account.
 
+### Form checks, enquiry email, logo (session 2, later)
+- **Phone and email are separate fields**, at least one required. Phone: UK numbers only, normalised to
+  `+447...` (`normalisePhone`, rejects pagers/personal numbers/fake repeats). Email: format check
+  (`normaliseEmail`) plus a **DNS check that the domain can receive mail** (Cloudflare DNS-over-HTTPS; a
+  non-existent domain like `gmial.con` is refused). Postcode: shape check plus a **postcodes.io existence
+  check**. All three give instant inline errors in the form and are re-checked on the server. The lookups
+  **fail open** (`src/lib/verify.ts`): a lookup service being down never turns a customer away.
+  DB: `enquiries.phone`, `.email` (migration 0003; `contact` is kept as a readable join), CHECK that one exists.
+- **The pin must be confirmed:** when a map is showing, Send is blocked until the visitor taps the map or
+  drags the pin (or uses "Use my location"); the form scrolls to the map and says why. Nothing is forced
+  when the map cannot show (no token, no WebGL, blocked) or no pin exists yet (unknown postcode).
+  The server cannot enforce this (it cannot know the map was available), so it is client-side by design.
+- **Enquiry email to Sam:** attached Mapbox static map (fetched server side with our Referer), big "Open in
+  Google Maps" and "Get directions" buttons, tap-to-call phone and mailto email, and an honest pin label
+  (confirmed / approximate postcode centre / none). Needs checking in a real inbox (Gmail + phone) and in
+  Outlook/Apple Mail.
+- Logo is white-on-transparent (`public/ccs-logo.png`, original in `docs/assets/`): no soft edge.
+- Pushed to GitHub (`origin`): `main` and `staging`. No workflows exist yet, so pushing deploys nothing.
+
+### Sam's tracker / planner: ideas from Tristan (not started; read before designing)
+Tristan's goal: get this working **for Sam first**. WindowsWayfinder has stalled; much of its idea set
+(rounds, planner, payments) now belongs here. ⚠️ CLAUDE.md and ADR 0005 still say "do not merge the two":
+that rule needs an explicit decision and an ADR (supersede it) before building, then update CLAUDE.md.
+- **Rounds and the week:** customers on rounds, "due this week" list, the round for the day.
+- **Check-out / done view:** tap a job done; money owed (debts) and payments taken.
+- **Work planner with a start/done timer** so Sam can see how long jobs really take (feeds pricing).
+- **Cancellations:** record how often customers cancel, to estimate how many of a round might cancel and
+  feed that into **estimated earnings** (expected vs booked).
+- **Template emails:** send and edit templated emails (confirmations, reminders, "we are on our way",
+  review requests) from the admin. Reuse the Resend setup (`src/lib/mail.ts`, `hello@` for replies).
+- **Crossover with the HairByRachel /admin:** look at how Rachel's admin does appointments, templates and
+  reminders and reuse the patterns (house style = HairByRachel). Do that read first; do not copy GPL code.
+- Data fits Postgres (ADR 0005): customers, properties (with the confirmed lat/lng), rounds, jobs, payments,
+  cancellations, templates, all with RLS on and every route behind `getAdmin()`.
+
 ### Added later in session 2 (all on staging)
 - Logo: the card artwork (`public/ccs-logo.png`) replaces the CSS wordmark; its edges are feathered
   into the hero gradient (`.hero`, `.logo-feather` in `globals.css`). Low-res: ask Sam for the vector/original.
