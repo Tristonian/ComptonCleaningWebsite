@@ -3,10 +3,12 @@
 import { headers } from 'next/headers';
 import { sha256Hex } from '@/lib/auth/crypto';
 import { getDb } from '@/lib/db';
-import { getEnv } from '@/lib/env';
+import { getEnv, siteUrl } from '@/lib/env';
 import { sendMail } from '@/lib/mail';
 import { checkEnquiry } from '@/lib/enquiry';
-import { mapsLink } from '@/lib/geo';
+import { directionsLink, mapsLink } from '@/lib/geo';
+import { buildEnquiryEmail } from '@/lib/enquiry-email';
+import { fetchMapImage, postcodeCentre } from '@/lib/map-image';
 import { markEmailed, storeEnquiry } from '@/lib/enquiries-store';
 import { isLocale } from '@/lib/content/shared';
 
@@ -39,7 +41,7 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
   const h = await headers();
   const requested = h.get('x-locale');
   const locale = isLocale(requested) ? requested : 'en';
-  const { name, address, postcode, contact, notes, point } = checked.value;
+  const { address, postcode, contact, point } = checked.value;
 
   const ip = h.get('cf-connecting-ip') ?? h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
   const ipHash = await sha256Hex(`${getEnv('SESSION_SECRET') ?? ''}|enquiry|${ip}`);
@@ -63,17 +65,22 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
 
   try {
     const isEmail = contact.includes('@');
-    // A plain Maps link (no API key): the confirmed pin if there is one, else a search on the address.
-    const mapUrl = mapsLink({ address, postcode, point });
-    const pinText = point ? 'Pin confirmed by the customer' : 'No pin, address search only';
-    const notesText = notes ? `\nNotes:\n${notes}\n` : '';
-    const notesHtml = notes ? `<p><b>Notes:</b><br>${esc(notes).replace(/\n/g, '<br>')}</p>` : '';
+    // The map picture: the confirmed pin, else the centre of the postcode (labelled approximate).
+    const centre = point ? null : await postcodeCentre(postcode);
+    const mapPoint = point ?? centre;
+    const image = mapPoint ? await fetchMapImage(mapPoint, getEnv('MAPBOX_TOKEN'), siteUrl()) : null;
+    const email = buildEnquiryEmail({
+      input: checked.value,
+      mapUrl: mapsLink({ address, postcode, point }),
+      directionsUrl: directionsLink({ address, postcode, point }),
+      pinKind: point ? 'pin' : centre ? 'postcode' : 'none',
+      hasMapImage: Boolean(image),
+    });
     await sendMail({
       to,
       ...(isEmail ? { replyTo: contact } : {}),
-      subject: `New enquiry from ${name}`,
-      text: `Name: ${name}\nAddress: ${address}\nPostcode: ${postcode}\nContact: ${contact}\nMap (${pinText}): ${mapUrl}\n${notesText}\nSent from the website contact form.`,
-      html: `<p><b>Name:</b> ${esc(name)}<br><b>Address:</b> ${esc(address)}<br><b>Postcode:</b> ${esc(postcode)}<br><b>Contact:</b> ${esc(contact)}<br><a href="${mapUrl}">Open in Google Maps</a> (${pinText})</p>${notesHtml}<p>Sent from the website contact form.</p>`,
+      ...email,
+      ...(image ? { inline: [image] } : {}),
     });
     await markEmailed(db, id);
   } catch (err) {
@@ -81,8 +88,4 @@ export async function sendEnquiry(_prev: ContactState, form: FormData): Promise<
     console.error('[contact] enquiry', id, 'stored but email failed:', err);
   }
   return { status: 'sent' };
-}
-
-function esc(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }

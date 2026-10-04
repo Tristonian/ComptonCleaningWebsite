@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPlausibleUkPoint, mapsLink, parsePoint } from './geo';
+import { directionsLink, isPlausibleUkPoint, mapsLink, parsePoint } from './geo';
 
 describe('parsePoint', () => {
   it('accepts a point in Bristol and rounds to 6 decimals', () => {
@@ -30,5 +30,16 @@ describe('mapsLink', () => {
   it('falls back to the typed address', () => {
     const url = mapsLink({ address: '1 High St', postcode: 'BS16 1AA', point: null });
     expect(url).toContain('query=1%20High%20St%2C%20BS16%201AA');
+  });
+});
+
+describe('directionsLink', () => {
+  it('navigates to the pin when there is one, else to the address', () => {
+    expect(directionsLink({ address: 'a', postcode: 'b', point: { lat: 51.5, lng: -2.5 } })).toBe(
+      'https://www.google.com/maps/dir/?api=1&destination=51.5%2C-2.5',
+    );
+    expect(directionsLink({ address: '1 High St', postcode: 'BS16 1AA', point: null })).toContain(
+      'destination=1%20High%20St%2C%20BS16%201AA',
+    );
   });
 });

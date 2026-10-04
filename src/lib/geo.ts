@@ -28,6 +28,12 @@ export function parsePoint(rawLat: unknown, rawLng: unknown): LatLng | null {
   return { lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6 };
 }
 
+/** One-tap turn-by-turn directions (opens Google Maps navigation). A pin beats the typed address. */
+export function directionsLink(args: { address: string; postcode: string; point: LatLng | null }): string {
+  const destination = args.point ? `${args.point.lat},${args.point.lng}` : `${args.address}, ${args.postcode}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+}
+
 /**
  * A Google Maps link for the enquiry email. A confirmed pin wins; otherwise a text search on the
  * address. No API key: it just opens the Maps app or site.

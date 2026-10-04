@@ -2,12 +2,21 @@ import 'server-only';
 import { NOTIFY_FROM } from '@/lib/business';
 import { getEnv } from '@/lib/env';
 
+/** An inline image: reference it in the HTML as `<img src="cid:CONTENT_ID">`. */
+export interface InlineImage {
+  filename: string;
+  contentBase64: string;
+  contentType: string;
+  contentId: string;
+}
+
 export interface Mail {
   to: string;
   subject: string;
   text: string;
   html: string;
   replyTo?: string;
+  inline?: InlineImage[];
 }
 
 /**
@@ -32,6 +41,16 @@ export async function sendMail(mail: Mail): Promise<void> {
       text: mail.text,
       html: mail.html,
       ...(mail.replyTo ? { reply_to: mail.replyTo } : {}),
+      ...(mail.inline?.length
+        ? {
+            attachments: mail.inline.map((i) => ({
+              filename: i.filename,
+              content: i.contentBase64,
+              content_type: i.contentType,
+              content_id: i.contentId,
+            })),
+          }
+        : {}),
     }),
   });
   if (!res.ok) throw new Error(`Resend responded ${res.status}: ${(await res.text()).slice(0, 300)}`);

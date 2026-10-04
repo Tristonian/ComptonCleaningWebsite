@@ -28,7 +28,7 @@ export async function HomePage() {
       {/* Hero: the business card. CCS, the squeegee, the web address, the phone number. */}
       <header className="hero relative overflow-hidden px-4 pb-10 pt-16 text-center text-white">
         <HeroMenu />
-        {/* The business card artwork. Its own teal background is feathered into the hero's. */}
+        {/* The business card artwork, white on a transparent background (docs/assets has the original). */}
         <Ed id="brand.name" as="h1" className="sr-only">
           Compton Cleaning Services
         </Ed>
@@ -36,9 +36,9 @@ export async function HomePage() {
         <img
           src="/ccs-logo.png"
           alt=""
-          width={741}
-          height={389}
-          className="logo-feather mx-auto w-full max-w-sm"
+          width={1482}
+          height={778}
+          className="mx-auto w-full max-w-sm"
         />
         <Ed id="brand.web" as="p" className="mt-3 text-lg font-bold tracking-wide">
           ComptonCleaning.co.uk

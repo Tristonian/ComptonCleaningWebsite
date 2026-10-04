@@ -24,6 +24,9 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
   const [address, setAddress] = useState('');
   const [postcode, setPostcode] = useState('');
   const [point, setPoint] = useState<LatLng | null>(null);
+  // Only a pin the visitor moved, or a location their device reported, is sent as coordinates. A
+  // pin that just sits at the middle of the typed postcode is a guess, so Sam is not told it is confirmed.
+  const [confirmed, setConfirmed] = useState(false);
   const [mapBroken, setMapBroken] = useState(false);
   const [locating, setLocating] = useState<Locating>('idle');
   const lookedUp = useRef('');
@@ -47,6 +50,7 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
       const { result } = (await res.json()) as { result?: { latitude: number; longitude: number } };
       if (result && isPlausibleUkPoint(result.latitude, result.longitude)) {
         setPoint({ lat: result.latitude, lng: result.longitude });
+        setConfirmed(false);
       }
     } catch {
       // Offline or blocked: the typed postcode is still submitted.
@@ -61,6 +65,7 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
         const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         if (!isPlausibleUkPoint(here.lat, here.lng)) return setLocating('failed');
         setPoint(here);
+        setConfirmed(true);
         setLocating('idle');
         await fillFromPoint(here, { replaceAddress: false });
       },
@@ -163,6 +168,7 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
             point={point}
             onMove={(p) => {
               setPoint(p);
+              setConfirmed(true);
               void fillFromPoint(p, { replaceAddress: false });
             }}
             onFail={() => setMapBroken(true)}
@@ -172,8 +178,8 @@ export function ContactForm({ mapboxToken }: { mapboxToken?: string }) {
           </Ed>
         </div>
       )}
-      <input type="hidden" name="lat" value={point ? String(point.lat) : ''} />
-      <input type="hidden" name="lng" value={point ? String(point.lng) : ''} />
+      <input type="hidden" name="lat" value={point && confirmed ? String(point.lat) : ''} />
+      <input type="hidden" name="lng" value={point && confirmed ? String(point.lng) : ''} />
 
       <label className="flex flex-col gap-1 text-sm font-semibold">
         <Ed id="contact.form.contact">Contact number / email</Ed>
