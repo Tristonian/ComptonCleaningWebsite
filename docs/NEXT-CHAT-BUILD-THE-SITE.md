@@ -34,14 +34,26 @@ not build on top of an assumption.
 
 ## Update (end of session 2, 2026-10-04)
 
-The public one-page site and the Resend contact form are built and deployed to staging, and the data layer moved from D1 to Neon Postgres (ADR 0005, `db/migrations`, `npm run db:migrate`); see
-`docs/NEXT_STEPS.md` ("Built 2026-10-04" and "Next") and `docs/INFRASTRUCTURE.md` section 3. The
-"Not verified" list above still applies, plus: nothing has been viewed on a real phone, and the form's
-rate limit and notes field are deployed but unexercised. `.env.local` holds `RESEND_API` (sending-only key).
+Built and deployed to staging (https://staging.comptoncleaning.co.uk), all committed and pushed to GitHub
+(`main` and `staging`): the one-page site; the contact form (phone/email split with verifiers, service and
+source drop-downs, location + draggable Mapbox pin that must be confirmed, "is this your address" card, sent
+confirmation); the enquiry email to Sam (map picture, one-tap Maps and directions, tap-to-call); Resend for
+`hello@` (send as + receive); and the move from D1 to Neon Postgres (ADR 0005, `db/migrations`,
+`npm run db:migrate`, RLS on). Read `docs/NEXT_STEPS.md` ("Next" and the idea lists), `docs/INFRASTRUCTURE.md`
+(Resend, Neon, Mapbox) and ADR 0005.
+
+Not verified by a human on a real device: almost all of the above (see the first item under "Next").
+Gotchas learned: `wrangler`/OpenNext deploy fails with EBUSY if `next dev` is still running (stop it first);
+`.env.local` holds live Neon/Resend/Mapbox values (never commit); Mapbox URL restrictions take no wildcards;
+the Chrome test tool froze on map wheel events; Windows shell quoting breaks long `node -e`/heredoc patches, so
+write patch scripts to a file.
 
 ## Paste this
 
-> Read CLAUDE.md, docs/NEXT_STEPS.md and docs/NEXT-CHAT-BUILD-THE-SITE.md. Staging has the one-page
-> site and a working contact form. First I'll check it on my phone and tell you what I see. Then build
-> first re-verify login, a pencil save and a contact-form submit on staging after the Neon move, then the inline photo uploader (R2, resize in the browser, content-hash keys, zoom/replace like
-> HairByRachel), an admin list of enquiries for Sam with a notes field, and the area/SEO pages.
+> Read CLAUDE.md, docs/NEXT_STEPS.md, docs/INFRASTRUCTURE.md, ADR 0005 and docs/NEXT-CHAT-BUILD-THE-SITE.md.
+> Staging has the site and the contact form. First I'll test on my phone and tell you what I see (login,
+> pencil, form, email, location, map zoom). Then build, in this order: the logo upload with a cropper plus a
+> colour picker for the hero background (R2, admin-only); then the enquiry inbox in /admin (read, reply from
+> hello@, notes, add as customer); then production go-live. Ideas parked in NEXT_STEPS: tracker/planner,
+> weather, referrals and review promos, cancellations, template emails. Decide the WindowsWayfinder boundary
+> with me before the planner.

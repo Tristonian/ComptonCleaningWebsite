@@ -164,12 +164,28 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
   actions and admin routes (each re-checking `getAdmin()`) may read `enquiries`; never add a public read route.
 
 ### Next (in order)
-- [ ] Look at staging on a real phone: hero, hamburger, sticky bar, form, then exercise the rate limit.
-- [ ] Inline photo upload/replace/zoom (R2, resize before upload, content-hash keys; ADR 0002);
-      add photo slots to Services and the hero. Decide the canonical logo (card teal vs Maps navy).
-- [ ] Admin list of enquiries for Sam (the pencil's admin area), with a place for his own notes.
-- [ ] Real reviews (none invented), Sam's real price, postcode checker, before/after slider.
-- [ ] Production: migrate 0001-0003, set secrets (incl. `RESEND_API`, `ENQUIRY_TO`), DNS, push to GitHub.
+- [ ] **Re-verify on staging after the Neon move and all the form changes** (nothing here has been done by a human
+      on a real device): Google login, a pencil save, a contact-form submit (Sam gets the email: warn him or set
+      `ENQUIRY_TO` to Tristan for the test), the email in Gmail on a phone, "Use my location" with a real
+      permission prompt, pinch zoom and wheel zoom on the map (the test browser froze on wheel events, so wheel
+      zoom is UNTESTED), the sent confirmation, the hamburger/sticky bar, the Welsh switch.
+- [ ] **Logo upload + colour picker in the admin/pencil** (Tristan 2026-10-04): a file picker with a
+      lightbox cropper so Sam can replace the main logo, and a colour picker for the colour around it (hero
+      background). R2 storage with content-hash keys, resize/crop in the browser before upload, admin-only API,
+      settings row in Postgres (logo key, hero colour), served with immutable cache headers (ADR 0002 still
+      governs R2). `public/ccs-logo.png` is the default; `docs/assets/ccs-logo-original.png` is the source.
+      Same uploader then serves the photo slots in Services and the gallery.
+- [ ] **Enquiry inbox in /admin** (Tristan 2026-10-04): read enquiries (name, service, source, address with the
+      pin map, phone/email), mark status (new / contacted / quoted / booked / lost), **reply from the admin**
+      (Resend, sent as `hello@`, replies land in Sam's inbox), keep Sam's own **notes**, and **add as customer**.
+      This is the first real admin feature and the seed of the tracker below (customers, properties with lat/lng,
+      rounds, jobs). Every route behind `getAdmin()`; RLS stays on.
+- [ ] Production: `db:migrate -- --branch production`, secrets (`DATABASE_URL`, `RESEND_API`, `ENQUIRY_TO`,
+      `MAPBOX_TOKEN`, Google OAuth, `SESSION_SECRET` new), DNS for the apex, www redirect, privacy policy (must
+      mention Mapbox + postcodes.io + Resend), Neon history retention up, Mapbox usage alert.
+- [ ] Real reviews (none invented), Sam's real price, before/after slider, area/SEO pages.
+- [ ] Decide the WindowsWayfinder boundary (CLAUDE.md says do not merge; Tristan says it stalled and wants the
+      planner here for Sam first): write an ADR, then update CLAUDE.md.
 
 ## SEO (replaces Sam's ~£100/month agency; no ranking guarantees)
 
