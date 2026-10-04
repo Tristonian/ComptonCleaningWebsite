@@ -3,56 +3,64 @@
 The in-chat todo list doesn't survive a new session, so the live backlog lives here. Read
 `ROADMAP.md` for direction, then pick up from this list. Keep it current.
 
-_Last updated: **2026-10-04** — scaffold, Google admin login, and the wording pencil + Welsh switch built.
-Two local commits on `main` (not pushed). **Nothing is deployed or tested on a real phone.** No remote
-resources exist yet._
+_Last updated: **2026-10-04 (end of session 1)**. Staging is LIVE at
+https://staging.comptoncleaning.co.uk. Production is not deployed and the real domain still has
+no DNS records. Commits are local on `main` (a local `staging` branch exists); **nothing has been
+pushed to GitHub**._
 
-## Done this session
-- Cloudflare: Tristan is a member of Sam's account; `comptoncleaning.co.uk` is an active zone
-  with **no DNS records** (clean slate, no email); R2 enabled. See `INFRASTRUCTURE.md`.
-- Google Cloud project `comptoncleaning` (owned by Sam's Google account), consent screen in
-  **Testing** with Sam + Tristan as test users, OAuth Web client created, secrets in `.env.local`.
-- Scaffold: Next 15 + Tailwind 3 + OpenNext, D1 migration `0001`, `src/lib/auth/*`, routes
-  `/api/auth/google`, `/api/auth/google/callback`, `/api/auth/logout`, pages `/`, `/admin`,
-  `/admin/login`. 24 unit tests (allow-list, signed cookie, ID-token verification incl.
-  forged signature / alg confusion / wrong aud / nonce / unverified email). `tsc` clean.
-- Smoke-tested with curl: `/admin` redirects to login, `/api/auth/google` redirects to Google
-  with PKCE + state + nonce, callback with no cookie is refused.
+## State of play
 
-## Next, in order
-- [ ] **Tristan: click through a real login** at http://localhost:3000/admin/login (`npm run dev`;
-      local D1 already migrated with `npm run db:migrate:local`). Expect Google's "hasn't verified
-      this app" screen: Advanced -> Continue. Then `/admin` should say "Signed in as ...".
-      ⚠️ Not yet verified end-to-end: only the pre-Google half and the refusal paths were driven.
-- [ ] Push `main` and `staging` (a local `staging` branch exists). Repo is public: `.env.local` is
-      ignored and verified, re-check before pushing.
-- [ ] Create remote resources on Sam's account (`CLOUDFLARE_ACCOUNT_ID` pinned in
-      `wrangler.jsonc`): D1 `compton-cleaning` + `-staging`, R2 `compton-cleaning-cache`,
-      `-images` and the `-staging` pair. Put real `database_id`s in `wrangler.jsonc`.
-- [ ] Deploy staging Worker, then set its real URL in `env.staging.vars.SITE_URL` and add
-      `<staging url>/api/auth/google/callback` to the Google OAuth client's redirect URIs.
-- [ ] `wrangler secret put` GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / ADMIN_ALLOWED_EMAILS /
-      SESSION_SECRET for staging (new SESSION_SECRET per environment), then verify non-empty.
-- [ ] CI (`typecheck`, `test`, `audit`) and `deploy.yml`; Cloudflare API token in GitHub secrets.
-- [ ] Add Tristan as Owner on the Google Cloud project (IAM) if not already done.
-- [ ] Publish the Google consent screen once the site has a homepage + privacy policy URL.
+| | |
+|---|---|
+| Staging | https://staging.comptoncleaning.co.uk (custom domain via `routes`; workers.dev is OFF) |
+| Production | Not deployed. `comptoncleaning.co.uk` has 0 DNS records. |
+| Cloudflare | Sam's account `f63f844d70738925fc7fb251893122cc`, Tristan is a member. Always pin `CLOUDFLARE_ACCOUNT_ID`. |
+| Data | D1 `compton-cleaning` / `-staging` (migration 0001 applied to staging + local only). R2 `compton-cleaning-images(-staging)`. |
+| Auth | Google OAuth (ADR 0003). Consent screen in **Testing**; test users: Sam + Tristan. |
+| Local | `npm run dev` -> http://localhost:3000 (D1 migrated with `npm run db:migrate:local`). 45 tests, `tsc` and `next build` clean. |
 
-## Built, awaiting a real-browser check
-- [x] Pencil (`<Ed id>`, `EditMode`, bottom-sheet `Inspector`, server actions) - wording only.
-      Store logic tested against the real migration (11 tests); build passes; with a forged
-      local session the pencil shows for admins and not for visitors.
-      ⚠️ **Never driven in a browser**: tapping text, typing, Save and Revert have not been
-      done by a human. Sign in locally, tap Edit, change the heading, Save, reload.
-- [x] Welsh: `/cy`, switch, `src/content/cy.ts`, `x-locale` middleware, coverage test that fails
-      if an `<Ed id>` has no Welsh entry. ⚠️ **Welsh is machine-drafted**; a fluent speaker must
-      review before launch. Still to do: hreflang alternates + sitemap entries.
+## ⚠️ Not verified (be honest about these)
 
-## Then (Phase 1/2, see ROADMAP)
-- [ ] Pencil v2 if wanted: typography + site theme tabs (LesK has them: `style.ts`, `Inspector`).
-- [ ] The layout is dynamic (reads cookies + D1 per request). Fine at this size; add tag-based
-      caching if it is ever measurably slow.
-- [ ] Public pages, pricing, postcode checker, before/after slider, photo uploader (resize before
-      upload), WhatsApp review link.
-- [ ] Business facts from Sam: prices, postcodes, WhatsApp number, insurer + cover amount, Google
-      review URL, photo consent. Sam would like an `@comptoncleaning.co.uk` address: Cloudflare
-      Email Routing can forward it to his Gmail for free.
+- **A real Google login has not been confirmed end to end.** The pre-Google half and every refusal
+  path were driven; the last attempt hit `redirect_uri_mismatch` because the staging URI
+  (`https://staging.comptoncleaning.co.uk/api/auth/google/callback`) had not yet been saved in the
+  Google client. Confirm it is saved, then sign in on staging and on a phone.
+- **The pencil has never been used in a browser**: tap text, type, Save, Revert, reload.
+- **Nothing has been seen on a real phone.**
+- **Welsh is machine-drafted** (`src/content/cy.ts`). A fluent speaker must review it before launch.
+
+## Do first next session
+
+- [ ] Confirm the Google redirect URI is saved; sign in at `/admin/login` on staging; check `/admin`.
+- [ ] Use the pencil on staging: change the heading in English and in Welsh, Save, reload, Revert.
+- [ ] Push `main` + `staging` to GitHub (repo is public: `.env.local` ignored and verified, re-check).
+- [ ] CI (`typecheck`, `test`, `audit`) and `deploy.yml`; needs a Cloudflare API token with Workers,
+      D1, R2 and **DNS** edit (wrangler's own login token cannot edit DNS) in GitHub secrets.
+- [ ] Add Tristan as Owner on the Google Cloud project (IAM).
+
+## Production (when the pages are worth showing)
+
+- [ ] `npm run db:migrate:production`; set the four secrets on the production Worker with a NEW
+      `SESSION_SECRET` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_ALLOWED_EMAILS`,
+      `SESSION_SECRET`); verify each is non-empty through the live Worker.
+- [ ] Add `https://comptoncleaning.co.uk/api/auth/google/callback` to the Google client.
+- [ ] Add `routes` custom domain for the apex (+ `www` redirect) in `wrangler.jsonc`, deploy.
+- [ ] Publish the Google consent screen once there is a homepage + privacy policy URL.
+
+## The fun part (Phase 1/2, see ROADMAP)
+
+- [ ] Public pages with `<Ed>` on every string: hero, pricing (4-weekly / 8-weekly / one-off),
+      postcode checker, trust section (only verified claims), testimonials, sticky Call/WhatsApp bar.
+- [ ] Glass UI, squeegee scroll bar, before/after slider (touch, keyboard, reduced-motion safe).
+- [ ] One-tap photo uploader (resize in the browser before upload; R2 content-hash keys).
+- [ ] WhatsApp review-link generator for Sam.
+- [ ] Welsh: hreflang alternates + sitemap entries; get the wording reviewed.
+- [ ] Pencil v2 if wanted: typography + site theme (LesK has `style.ts` and the Inspector tabs).
+- [ ] Security hardening before go-live: CSP, rate limit on `/api/auth/*`, D1 export backups to R2.
+- [ ] Layout is dynamic (cookie + D1 per request); add tag caching only if measurably slow.
+
+## Business facts still needed from Sam
+
+Prices, postcodes covered, WhatsApp/phone number, insurer + cover amount (no badges until proven),
+Google Business Profile review URL, photo consent, whether he wants an `@comptoncleaning.co.uk`
+address (Cloudflare Email Routing can forward it to his Gmail for free).
