@@ -32,10 +32,16 @@ Tristan has signed in with Google on staging (confirmed). Still unverified: Sam'
 pencil in a browser, anything on a real phone, and the Welsh wording. Verify the pencil first; do
 not build on top of an assumption.
 
+## Update (end of session 2, 2026-10-04)
+
+The public one-page site and the Resend contact form are built and deployed to staging; see
+`docs/NEXT_STEPS.md` ("Built 2026-10-04" and "Next") and `docs/INFRASTRUCTURE.md` section 3. The
+"Not verified" list above still applies, plus: nothing has been viewed on a real phone, and the form's
+rate limit and notes field are deployed but unexercised. `.env.local` holds `RESEND_API` (sending-only key).
+
 ## Paste this
 
-> Read CLAUDE.md, docs/NEXT_STEPS.md and docs/NEXT-CHAT-BUILD-THE-SITE.md. Login already works on
-> https://staging.comptoncleaning.co.uk; first have me check the pencil there (I'll tell you what I see).
-> Then build the public site in house style: pencil on every string (English + Welsh), sticky
-> Call/WhatsApp bar, pricing, postcode checker, glass UI with the squeegee scroll bar and the
-> before/after slider. I'll have Sam's prices and postcodes to hand.
+> Read CLAUDE.md, docs/NEXT_STEPS.md and docs/NEXT-CHAT-BUILD-THE-SITE.md. Staging has the one-page
+> site and a working contact form. First I'll check it on my phone and tell you what I see. Then build
+> the inline photo uploader (R2, resize in the browser, content-hash keys, zoom/replace like
+> HairByRachel), an admin list of enquiries for Sam with a notes field, and the area/SEO pages.

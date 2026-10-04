@@ -62,9 +62,11 @@ Flag anything not yet checked on a real phone.
 ## Status
 
 Foundations are built and **staging is live** (https://staging.comptoncleaning.co.uk): hosting, D1,
-Google admin login (confirmed working), the `<Ed>` pencil, the `/cy` Welsh switch. The public
-pages are not built (the homepage is a placeholder) and production is not deployed. What is and
-is not verified is listed in `docs/NEXT_STEPS.md`; read that list before building on anything.
+Google admin login (confirmed working), the `<Ed>` pencil, the `/cy` Welsh switch, and the one-page
+public site with a working contact form (Resend; `hello@` send/receive set up). Not yet done: photo
+upload, enquiry admin view, real reviews, and production is not deployed. What is and is not
+verified (nothing is checked on a real phone yet) is in `docs/NEXT_STEPS.md`; read it before
+building on anything. Email setup and its gotchas: `docs/INFRASTRUCTURE.md` section 3.
 
 **Sam's Cloudflare account, not Tristan's.** Account `f63f844d70738925fc7fb251893122cc` is pinned
 in `wrangler.jsonc`; always set `CLOUDFLARE_ACCOUNT_ID`. Handover for the next build session:

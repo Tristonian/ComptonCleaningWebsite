@@ -37,6 +37,42 @@ pushed to GitHub**._
       D1, R2 and **DNS** edit (wrangler's own login token cannot edit DNS) in GitHub secrets.
 - [ ] Add Tristan as Owner on the Google Cloud project (IAM).
 
+## Built 2026-10-04 (session 2): deployed to staging, NOT yet seen on a real phone
+
+- One-page site from Sam's sketch: hero (CCS card style, hamburger), About (no heading), Services,
+  Prices, Contact, Reviews (with Sam's Google review link, `REVIEW_URL` in `src/lib/business.ts`);
+  sticky anchor bar. All text is `<Ed>` with draft Welsh. Hero is a CSS approximation of the card.
+- Contact form (name, address, contact, optional notes): stored in D1 `enquiries` first
+  (migrations 0002 + 0003, applied to staging), then emailed through **Resend** (`src/lib/mail.ts`,
+  plain fetch) from `enquiry@comptoncleaning.co.uk` to `ENQUIRY_TO` (Sam only on staging).
+  **Verified end to end on staging** (enquiry arrived in an inbox). Abuse controls: honeypot, field
+  limits, rate limit 3/hour per sender (salted IP hash) and 40/day site-wide (`RATE_LIMIT` in
+  `src/lib/enquiry.ts`). The rate limit and the notes field were deployed but **not yet exercised**.
+- Sending as / receiving at `hello@` works (see `INFRASTRUCTURE.md` section 3).
+- Enquiries are only in D1 and email: there is **no admin view of them yet**.
+  Query: `wrangler d1 execute compton-cleaning-staging --remote --env staging --command "SELECT * FROM enquiries"`.
+
+### Next (in order)
+- [ ] Look at staging on a real phone: hero, hamburger, sticky bar, form, then exercise the rate limit.
+- [ ] Inline photo upload/replace/zoom (R2, resize before upload, content-hash keys; ADR 0002);
+      add photo slots to Services and the hero. Decide the canonical logo (card teal vs Maps navy).
+- [ ] Admin list of enquiries for Sam (the pencil's admin area), with a place for his own notes.
+- [ ] Real reviews (none invented), Sam's real price, postcode checker, before/after slider.
+- [ ] Production: migrate 0001-0003, set secrets (incl. `RESEND_API`, `ENQUIRY_TO`), DNS, push to GitHub.
+
+## SEO (replaces Sam's ~£100/month agency; no ranking guarantees)
+
+- [ ] Ask Sam what the agency actually provides (invoice/contract), who owns the domain, any
+      existing site and the Google Business Profile, and any minimum term. Do not cancel until the
+      new site is live and indexed. Does the domain currently point at anything?
+- [ ] LocalBusiness JSON-LD (name, phone, areas served, services).
+- [ ] Area pages (Lyde Green, BS16, BS5, Chepstow, Caldicot, Newport), editable with the pencil.
+- [ ] Sitemap, hreflang for `/cy`, robots, titles/descriptions per page; Search Console set up.
+- [ ] Sam: add `comptoncleaning.co.uk` to the Business Profile ("Add website"), keep photos and
+      service areas current, ask every happy customer for a review (link: `REVIEW_URL` in
+      `src/lib/business.ts`). Keep name/address/phone identical everywhere.
+- [ ] Decide which logo is canonical: the Maps listing (navy, sparkles) vs the card (teal).
+
 ## Production (when the pages are worth showing)
 
 - [ ] `npm run db:migrate:production`; set the four secrets on the production Worker with a NEW
