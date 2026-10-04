@@ -119,6 +119,11 @@ that rule needs an explicit decision and an ADR (supersede it) before building, 
 - **Work planner with a start/done timer** so Sam can see how long jobs really take (feeds pricing).
 - **Cancellations:** record how often customers cancel, to estimate how many of a round might cancel and
   feed that into **estimated earnings** (expected vs booked).
+- **Weather forecast in the planner/admin** (Tristan, 2026-10-04): rain, wind and frost for the week and
+  per round/day, so Sam can move jobs (rain matters for windows, wind/ice for ladders and gutters).
+  Likely free, key-less source to evaluate first: Open-Meteo (needs lat/lng, which the confirmed pin
+  already gives us per customer); also consider the Met Office DataHub. Cache per area/day, call from the
+  server, never from the browser.
 - **Template emails:** send and edit templated emails (confirmations, reminders, "we are on our way",
   review requests) from the admin. Reuse the Resend setup (`src/lib/mail.ts`, `hello@` for replies).
 - **Crossover with the HairByRachel /admin:** look at how Rachel's admin does appointments, templates and
