@@ -2,6 +2,18 @@
 
 Newest first. Led by what changed for Sam, then the numbers and what is still untested.
 
+## 2026-10-04 (session 5): weather and photos on visits
+
+**For Sam**
+- **Weather** on the admin home: today in plain words ("Good for windows", "Fine, with care", "Poor for windows", "Ladder warning") with the reason, then the week with rain chance, top gust and overnight low. On the Work screen, picking a round shows the weather for where that round's customers are, with the round's usual day outlined.
+- **Photos on a visit:** on a customer's visit, 📷 Take photo opens the camera, 🖼️ From gallery picks from the phone (several at once). Up to 8 per visit, tap to open full size, Remove asks twice. Photos are shrunk before upload, and the phone's GPS position is dropped. Deleting a photo, a visit or a customer also deletes the stored file once nothing else uses it.
+
+**Under the hood:** ADR 0009; `src/lib/weather.ts`, `job-photos.ts`, `photo-store.ts`; no migration (the `job_photos` table already existed). Deleting a page photo now keeps the file if a visit photo shares it.
+
+**Numbers:** 217 tests pass in 28 files (19 new), typecheck and build clean. Staging Worker `42612c3f`; production untouched.
+
+**Still untested:** weather on a phone beyond the home tile (the per-round tile), photo upload from the gallery, remove, and the stored-file cleanup on a real device; the session 4 list in NEXT_STEPS is still unchecked.
+
 ## 2026-10-04 (session 4): paragraphs, then the work tracker
 
 **For Sam**

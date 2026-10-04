@@ -4,17 +4,17 @@ The in-chat todo list doesn't survive a new session, so the live backlog lives h
 world **as it is now**; it is rewritten, not appended, at each `/wrapup` (git history has the old ones).
 Read `CLAUDE.md`, then this, then `ROADMAP.md`. Start a fresh session with `/nextsteps`.
 
-_Last revised: **2026-10-04, end of session 4** (rich text editor, work tracker slices 1-2, map)._
+_Last revised: **2026-10-04, end of session 5** (weather, photos on a visit)._
 
-## State, verified at the end of session 4
+## State, verified at the end of session 5
 
 | Check | Result |
 |---|---|
 | `npm run typecheck` | clean |
-| `npm test` | **198 / 198** (26 files). The database tests boot an in-process Postgres each and take ~2 minutes in total; hook timeout is 60 s (`vitest.config.mts`). |
+| `npm test` | **217 / 217** (28 files). The database tests boot an in-process Postgres each and take ~2 minutes in total; hook timeout is 60 s (`vitest.config.mts`). |
 | `npx next build` | clean |
-| Git | `main` = `staging` = `dbab6c4` plus the wrap-up commits, all pushed to `origin` (the repo is **public**). A push deploys nothing: there is no deploy workflow. |
-| Staging | https://staging.comptoncleaning.co.uk, Worker version `7654cb14` (everything below). Neon `staging` branch migrated through **0010**, has 16 demo customers + 3 "Demo" rounds. |
+| Git | `main` = `staging`, pushed to `origin` after the wrap-up commit (the repo is **public**). A push deploys nothing: there is no deploy workflow. |
+| Staging | https://staging.comptoncleaning.co.uk, Worker version `42612c3f` (everything below, including weather and visit photos). No new migration this session. Neon `staging` branch migrated through **0010**, has 16 demo customers + 3 "Demo" rounds. |
 | Production | https://comptoncleaning.co.uk (apex 200, `www` → apex 301), Worker version `b6aa3d91`: the site + the rich text editor, **not** the work tracker. Neon `production` migrated through **0009**; **0010 NOT applied**, so do not deploy the tracker there before migrating. |
 | Neon `dev` branch | only through 0009 (run `npm run db:migrate` for local dev). |
 | Local DNS | this machine cached "no such domain" for the apex earlier; `curl --doh-url https://cloudflare-dns.com/dns-query https://comptoncleaning.co.uk/` proves it is up. |
@@ -24,7 +24,7 @@ _Last revised: **2026-10-04, end of session 4** (rich text editor, work tracker 
 - ✅ `npx wrangler whoami`: logged in (OAuth) as tristan.d.pointer@googlemail.com, with access to Sam's account `f63f844d…`. ✅ `gh auth status`: Tristonian.
 - ⚠️ **Production has NO Worker secrets** (`wrangler secret list` returns nothing). The public page renders defaults, **the contact form cannot store enquiries, and admin login does not work on production**, so the rich text editor and the tracker are unusable there. Fix: `bash scripts/set-prod-secrets.sh` (the assistant's secret writes were blocked by the permission check, so Tristan runs it), then verify each is non-empty through the live Worker (CLAUDE.md), then `docs/GO-LIVE.md` step 5. Also: Google OAuth redirect URI `https://comptoncleaning.co.uk/api/auth/google/callback` + Sam as test user; Sam reads `/privacy`.
 - **Production must be migrated before the tracker is deployed there:** `npm run db:migrate -- --branch production` (applies 0010), only when Tristan says so.
-- **Real-device checks:** Tristan reported sessions 2-3 "all good" on a phone (2026-10-04). **Nothing from session 4 has been seen on any device**, and nobody has used the editor, the work screen, the map or the demo data in a browser.
+- **Real-device checks:** Tristan reported sessions 2-3 "all good" on a phone (2026-10-04). In session 5 he saw the **weather tile on the admin home** and confirmed **Take photo works** on his phone. **Everything else from sessions 4-5 is unchecked on a device**: the editor, the work screen, the map, demo data, per-round weather, gallery upload and photo remove.
 - Sam's Gmail "send as" `hello@` with his own Resend key: done (Tristan). Sam's own Google login: still untested.
 - Sam's `Customers.csv` (the Squeegee export) is in Tristan's Downloads, never in the repo. It is 20 people with names, addresses and phones only (no price, frequency, postcode or last clean). Not yet imported anywhere real.
 - Welsh is machine-drafted (`src/content/cy.ts`); a fluent speaker must review before launch.
@@ -39,6 +39,10 @@ _Last revised: **2026-10-04, end of session 4** (rich text editor, work tracker 
 
 ## Built, do not redo
 
+**Session 5 (2026-10-04), on staging only (ADR 0009):**
+- **Weather** (`src/lib/weather.ts`, `components/admin/WeatherWeek.tsx`): Open-Meteo, server-side, Workers Cache API per ~1 km area per London day, fails soft. Admin home tile for Lyde Green; Work screen tile per selected round (centroid of its pins, round weekday outlined). Thresholds are named constants (rain 35/60%, gusts 25/35 mph, low 2/0 C) and are Tristan's guesses, not Sam's.
+- **Photos on a visit** (`job-photos.ts`, `photo-store.ts`, `components/admin/VisitPhotos.tsx`, actions in `visit-actions.ts`): **Take photo** (rear camera, `capture`) and **From gallery** (several), resized in the browser, R2 `photo/<sha256>`, max 8 per visit, `/img/[hash]`. `deleteJob` / `deleteCustomer` / `deleteBlock` now return the hashes nothing references any more and the caller removes them from R2 (`removePhotoObjects`). Photos can only be added **after** a visit is saved (not in the DONE panel on the Work screen).
+
 **Session 4 (2026-10-04), all committed; staging has it all, production has only the editor:**
 - **Rich text** (ADR 0007): `<Ed rich>` nodes (intro, services, price factors, contact intro), text blocks and custom service descriptions use a tiptap editor adapted from HairByRachel, the full toolbar (size, colour, alignment, B/I/U, H2/H3, quote, divider, lists, links) minus inline images. Stored as sanitised HTML (`src/lib/rich.ts`, `rich-sanitize.ts`, sanitised server-side on every save, even if the client lies about `rich`); blank lines are kept (empty paragraphs render a line high). Old plain text is converted when read; nothing was migrated. Lazy-loaded via `next/dynamic`.
 - **Work tracker** (ADR 0008, migration 0010): customers with price/frequency/preferred payment/last clean/Squeegee ref; **rounds** (a customer can be in several); `jobs` (done/missed, date never in the future, price, payment method, paid), `job_extras`, `job_photos` (table only, no UI yet), `payment_methods` (transfer/cash/card; Sam can add, no UI yet). **Due and owing are computed, never stored.** Debt = a done visit not marked paid. Screens: `/admin/customers` (search, Due/Owing/round filters, call/text/WhatsApp, "coming tomorrow" text), `/new` (Grab location), `/[id]` (edit, delete with typed confirmation, visit history with edit/delete/mark paid, log a visit), `/import`, `/map`, `/admin/work` (Due this week by round, Also in this round, Also due this week, Debts, Payments). Squeegee CSV import (`src/lib/customers-csv.ts`) skips references already imported, so re-imports never overwrite edits.
@@ -52,10 +56,10 @@ _Last revised: **2026-10-04, end of session 4** (rich text editor, work tracker 
 
 ## Next, in order
 
-1. **Weather on the admin home** (Tristan's pick for next): Open-Meteo (free, no key). Server-side fetch only, never from the browser; cache per area per day (Workers cache or a tiny table). Location: Sam's base (Lyde Green, BS16, about 51.50, -2.50) for the home tile; per-round and per-day forecasts can use the customers' pins. Show the week: rain chance, wind and frost, with a plain "good for windows / ladder warning" line (rain matters for windows, wind and ice for ladders and gutters). Must fail soft (a weather outage never breaks the admin home). Unit-test the parsing and the thresholds; handle London time.
-2. **Photos on a visit** (tables exist): reuse the block-photo upload path (resize in the browser, R2 `photo/<sha256>`, `/img/[hash]`); delete the R2 object when no row references it (also on customer delete: collect hashes first, then remove after the transaction).
-3. **Templates screen** (like Rachel's `emails` page): switch each text/email on or off and edit its content (rich editor for emails, plain for SMS), overrides-only; "coming tomorrow" (`src/lib/message-templates.ts`) and the reply templates (`src/lib/reply-templates.ts`) move in. SMSWorks wired in later behind the same templates. Add **Templates** to the tab bar then.
-4. Payment methods UI (Sam adds methods as needed), drag-to-order customers within a round (position column exists), customer "last cleaned" correction for imported customers, a way to set price/frequency/round for many imported customers quickly.
+1. **Templates screen** (like Rachel's `emails` page): switch each text/email on or off and edit its content (rich editor for emails, plain for SMS), overrides-only; "coming tomorrow" (`src/lib/message-templates.ts`) and the reply templates (`src/lib/reply-templates.ts`) move in. SMSWorks wired in later behind the same templates. Add **Templates** to the tab bar then. Needs a migration (overrides table): staging first.
+2. Payment methods UI (Sam adds methods as needed), drag-to-order customers within a round (position column exists), customer "last cleaned" correction for imported customers, a way to set price/frequency/round for many imported customers quickly.
+3. Visit photo follow-ups: add photos from the DONE panel on the Work screen (needs the job id after save), a photo count on the visit list, and decide whether visit photos should be admin-only (ADR 0009 open question).
+4. Weather follow-ups if Sam wants them: tune thresholds with him, show the forecast for a round's actual day on the customer list.
 5. Invoices (later; build on `jobs` + `job_extras`), cancellations/estimated earnings, the work timer.
 6. Referrals/promos, achievements, prices house animation, privacy notes on location tracking: see "Ideas" below.
 
@@ -82,28 +86,31 @@ _Last revised: **2026-10-04, end of session 4** (rich text editor, work tracker 
 - **Deploy by hand:** `CLOUDFLARE_ACCOUNT_ID=f63f844d70738925fc7fb251893122cc npm run deploy:staging` / `npm run deploy` (the latter prints a "multiple environments" warning and deploys the top-level production Worker, which is what is meant). Always set the account id (Sam's account, not Tristan's).
 - **Production secrets can look present when empty** and are currently absent altogether: verify non-empty through the live Worker after setting.
 - **`sanitize-html` styles:** only `font-size` (`NNpx`), `color` (hex) and `text-align` are allowed, with tight patterns. Widening them is a security decision.
+- **A hash can be a page photo AND a visit photo:** never delete `photo/<hash>` from R2 without `unreferenced()` (checks `job_photos` and `page_blocks`). Collect hashes before the database delete, remove after.
+- **`<input capture>` is a separate input from the gallery picker:** one input with only `accept` does not offer the camera on many Android phones. Keep the two buttons.
+- **Weather must never throw:** `getForecast` returns null on any failure and the pages hide the tile. Do not turn that into an error path.
+- **Shell quoting again:** `node -e "..."` in bash executes backticks inside double quotes and heredocs through the tool broke too. Write a script file with the editor tools and run it.
 - **Edit the wrong environment by accident:** `db:migrate`/`db:seed-demo` take `--branch`; the seed refuses `production`; migrate does not, so type the branch carefully.
 
 ## Do first next session
 
 1. `/nextsteps` will re-verify the state. Then ask Tristan whether production secrets are set (or set them with him), because the live site's form is broken without them.
-2. Have Tristan open staging `/admin` on a phone and report on the editor, Work screen, map and demo data (list under "Untested").
-3. Weather (item 1 above).
+2. Have Tristan open staging `/admin` on a phone and report on the editor, Work screen, map, demo data, per-round weather and gallery upload (list under "Untested").
+3. Templates (item 1 above).
 
 ## Prompt for the next chat
 
 ```text
-Work in C:\Users\Trist\Documents\GitHub\ComptonCleaningWebsite (Next.js 15 + Tailwind on Cloudflare Workers via OpenNext, Neon Postgres, R2; Sam's window-cleaning site + work tracker). Start every message with "Tristan, ". Run /nextsteps (or read CLAUDE.md, docs/NEXT_STEPS.md, docs/ROADMAP.md, ADRs 0007 and 0008 in that order).
+Work in C:\Users\Trist\Documents\GitHub\ComptonCleaningWebsite (Next.js 15 + Tailwind on Cloudflare Workers via OpenNext, Neon Postgres, R2; Sam's window-cleaning site + work tracker). Start every message with "Tristan, ". Run /nextsteps (or read CLAUDE.md, docs/NEXT_STEPS.md, docs/ROADMAP.md, ADRs 0007, 0008 and 0009 in that order).
 
-STATE (2026-10-04, verify first): typecheck clean; 198/198 tests (slow, ~2 min); build clean. main = staging pushed. Staging has everything (Worker 7654cb14, Neon staging migrated through 0010, 16 "Demo:" customers). Production has the site + rich text editor only (Worker b6aa3d91, Neon production through 0009, NO Worker secrets, so contact form and admin login do not work there). Repo is public.
+STATE (2026-10-04, verify first): typecheck clean; 217/217 tests (slow, ~1-2 min); build clean. main = staging pushed. Staging has everything (Worker 42612c3f, Neon staging migrated through 0010, 16 "Demo:" customers, weather + visit photos). Production has the site + rich text editor only (Worker b6aa3d91, Neon production through 0009, NO Worker secrets, so contact form and admin login do not work there). Repo is public. Tristan has seen the weather tile and Take photo working on his phone; nothing else from sessions 4-5 is checked on a device.
 
 TASKS, in order:
-1. Weather on the admin home, Open-Meteo (free, no key), server-side only, cached per area/day, fail soft. Home tile for Sam's base (Lyde Green ~51.50,-2.50) with the week: rain chance, wind, frost, and a plain "good for windows / ladder warning" line; then per-round/day using customer pins. Unit-test parsing and thresholds, use Europe/London dates.
-2. Photos on a visit (job_photos table exists): browser resize, R2 photo/<sha256>, /img/[hash]; remove the R2 object when nothing references it, including on customer delete.
-3. Templates screen like HairByRachel's: on/off + editable content per text/email (rich editor for email, plain for SMS), overrides-only; move "coming tomorrow" and the reply templates in; add a Templates tab. SMSWorks later.
-4. Payment methods UI, drag-to-order within a round, faster bulk setup of imported customers.
+1. Templates screen like HairByRachel's: on/off + editable content per text/email (rich editor for email, plain for SMS), overrides-only; move "coming tomorrow" (src/lib/message-templates.ts) and the reply templates (src/lib/reply-templates.ts) in; add a Templates tab to AdminTabs. Needs a migration (staging first, when Tristan says). SMSWorks later behind the same templates.
+2. Payment methods UI, drag-to-order within a round (position column exists), faster bulk setup of imported customers (price/frequency/round for many at once), "last cleaned" correction.
+3. Visit photo follow-ups (add from the DONE panel, count on the visit list) and the ADR 0009 question: should visit photos be admin-only?
 
-CONSTRAINTS: production is never migrated or deployed without Tristan saying so in that session (apply 0010 to production first: npm run db:migrate -- --branch production). Staging deploy/migrate when he says so for that work. Always set CLOUDFLARE_ACCOUNT_ID=f63f844d70738925fc7fb251893122cc. Money is integer pence; times UTC shown Europe/London; due/owing are computed never stored; audit rows hold ids only, never personal data; the Squeegee CSV and any customer data never go in the repo; never name a competitor; no sound; mobile-first (test at phone width, flag anything not seen on a real phone); rich text only via RichText/toDisplayHtml and sanitised on save; keep RichTextEditor lazy. Write files with the editor tools, not shell escapes.
+CONSTRAINTS: production is never migrated or deployed without Tristan saying so in that session (apply 0010 to production first: npm run db:migrate -- --branch production). Staging deploy/migrate when he says so for that work. Always set CLOUDFLARE_ACCOUNT_ID=f63f844d70738925fc7fb251893122cc. Money is integer pence; times UTC shown Europe/London; due/owing are computed never stored; audit rows hold ids only, never personal data; the Squeegee CSV and any customer data never go in the repo; never name a competitor; no sound; mobile-first (test at phone width, flag anything not seen on a real phone); rich text only via RichText/toDisplayHtml and sanitised on save; keep RichTextEditor lazy; never delete an R2 photo without unreferenced(). Write files with the editor tools; never node -e with backticks.
 
 CANNOT DO WITHOUT TRISTAN/SAM: production secrets (bash scripts/set-prod-secrets.sh), Google OAuth redirect + Sam as test user, real-phone checks, Welsh review, Sam's business facts, SMSWorks account.
 
