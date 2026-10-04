@@ -3,10 +3,7 @@
 The in-chat todo list doesn't survive a new session, so the live backlog lives here. Read
 `ROADMAP.md` for direction, then pick up from this list. Keep it current.
 
-_Last updated: **2026-10-04 (end of session 1)**. Staging is LIVE at
-https://staging.comptoncleaning.co.uk. Production is not deployed and the real domain still has
-no DNS records. Commits are local on `main` (a local `staging` branch exists); **nothing has been
-pushed to GitHub**._
+_Last updated: **2026-10-04 (end of session 2)**. Staging is LIVE at https://staging.comptoncleaning.co.uk. Production is not deployed and the real domain still has no website DNS records. `main` and `staging` are pushed to GitHub (`origin`); no CI/deploy workflow exists yet, so a push deploys nothing._
 
 ## State of play
 

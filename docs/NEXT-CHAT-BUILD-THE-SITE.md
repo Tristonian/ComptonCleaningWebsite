@@ -38,22 +38,27 @@ Built and deployed to staging (https://staging.comptoncleaning.co.uk), all commi
 (`main` and `staging`): the one-page site; the contact form (phone/email split with verifiers, service and
 source drop-downs, location + draggable Mapbox pin that must be confirmed, "is this your address" card, sent
 confirmation); the enquiry email to Sam (map picture, one-tap Maps and directions, tap-to-call); Resend for
-`hello@` (send as + receive); and the move from D1 to Neon Postgres (ADR 0005, `db/migrations`,
-`npm run db:migrate`, RLS on). Read `docs/NEXT_STEPS.md` ("Next" and the idea lists), `docs/INFRASTRUCTURE.md`
-(Resend, Neon, Mapbox) and ADR 0005.
+`hello@` (send as + receive); the move from D1 to Neon Postgres (ADR 0005, `db/migrations` 0001-0005,
+`npm run db:migrate`, RLS on); and the **/admin enquiry inbox** (dashboard, list with status filters, detail
+with call/text/WhatsApp/email, pin map, status, private notes, reply from `hello@` with templates, add as
+customer). Read `docs/NEXT_STEPS.md` ("Next" and the idea lists), `docs/INFRASTRUCTURE.md` (Resend, Neon,
+Mapbox) and ADR 0005.
 
-Not verified by a human on a real device: almost all of the above (see the first item under "Next").
+Not verified by a human on a real device: almost all of the above (see the first item under "Next"). In
+particular: sending an actual reply from the admin, a real Google login, "Use my location", map wheel/pinch zoom.
 Gotchas learned: `wrangler`/OpenNext deploy fails with EBUSY if `next dev` is still running (stop it first);
 `.env.local` holds live Neon/Resend/Mapbox values (never commit); Mapbox URL restrictions take no wildcards;
-the Chrome test tool froze on map wheel events; Windows shell quoting breaks long `node -e`/heredoc patches, so
-write patch scripts to a file.
+the Chrome test tool froze on map wheel events and its clicks miss unless you read coordinates from a screenshot;
+Neon returns bigint ids as strings (the PGlite test DB is set to match); Windows shell quoting breaks long
+`node -e`/heredoc patches, so write patch scripts to a file; a minted dev session (insert a row into `sessions`
+on the dev branch, set the `cc_session` cookie) is how to test /admin locally without Google.
 
 ## Paste this
 
 > Read CLAUDE.md, docs/NEXT_STEPS.md, docs/INFRASTRUCTURE.md, ADR 0005 and docs/NEXT-CHAT-BUILD-THE-SITE.md.
-> Staging has the site and the contact form. First I'll test on my phone and tell you what I see (login,
-> pencil, form, email, location, map zoom). Then build, in this order: the logo upload with a cropper plus a
-> colour picker for the hero background (R2, admin-only); then the enquiry inbox in /admin (read, reply from
-> hello@, notes, add as customer); then production go-live. Ideas parked in NEXT_STEPS: tracker/planner,
-> weather, referrals and review promos, cancellations, template emails. Decide the WindowsWayfinder boundary
-> with me before the planner.
+> Staging has the site, the contact form and the /admin enquiry inbox. First I'll test on my phone and tell
+> you what I see (Google login, pencil, form, email, location, map zoom, sending a reply). Then build, in
+> this order: the logo viewer/changer in /admin (file picker + cropper, R2, admin-only) with a colour picker
+> for the hero background; then production go-live. Ideas parked in NEXT_STEPS: price/house animation,
+> tracker/planner, weather, referrals and review promos, cancellations, template emails (editable), location
+> ideas (read the privacy notes). Decide the WindowsWayfinder boundary with me before the planner.
