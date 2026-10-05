@@ -138,3 +138,58 @@ describe('calendar dates', () => {
     expect(shiftMonth('2026-01-15', -1)).toBe('2025-12-01');
   });
 });
+
+import { assignLanes, DEFAULT_ROUND_MINUTES, fromMinutes, hourRange, laneStyle, roundColour, snapQuarter, toMinutes } from './schedule-shared';
+
+describe('the time grid', () => {
+  it('converts times and snaps to quarter hours', () => {
+    expect(toMinutes('09:30')).toBe(570);
+    expect(fromMinutes(570)).toBe('09:30');
+    expect(fromMinutes(-5)).toBe('00:00');
+    expect(fromMinutes(99999)).toBe('23:59');
+    expect(snapQuarter(547)).toBe(540);
+    expect(snapQuarter(553)).toBe(555);
+    expect(DEFAULT_ROUND_MINUTES).toBe(60);
+  });
+
+  it('shows at least 7 to 19 and widens to fit anything outside', () => {
+    expect(hourRange([])).toEqual({ minHour: 7, maxHour: 19 });
+    expect(hourRange([{ start: 9 * 60, end: 17 * 60 }])).toEqual({ minHour: 7, maxHour: 19 });
+    expect(hourRange([{ start: 5 * 60 + 30, end: 21 * 60 + 15 }])).toEqual({ minHour: 5, maxHour: 22 });
+    expect(hourRange([{ start: 0, end: 24 * 60 }])).toEqual({ minHour: 0, maxHour: 24 });
+  });
+
+  it('puts simultaneous things side by side, but not back-to-back ones', () => {
+    const lanes = assignLanes([
+      { id: 'a', start: 540, end: 600 },
+      { id: 'b', start: 570, end: 630 },
+      { id: 'c', start: 600, end: 660 }, // starts as a ends: shares with b only
+      { id: 'd', start: 720, end: 780 }, // alone
+    ]);
+    expect(lanes.get('a')).toEqual({ lane: 0, lanes: 2 });
+    expect(lanes.get('b')).toEqual({ lane: 1, lanes: 2 });
+    expect(lanes.get('c')).toEqual({ lane: 0, lanes: 2 });
+    expect(lanes.get('d')).toEqual({ lane: 0, lanes: 1 });
+    expect(assignLanes([{ id: 'x', start: 540, end: 600 }, { id: 'y', start: 600, end: 660 }]).get('y')).toEqual({ lane: 0, lanes: 1 });
+  });
+
+  it('does not depend on the order things arrive in', () => {
+    const items = [
+      { id: 'a', start: 540, end: 600 },
+      { id: 'b', start: 540, end: 600 },
+      { id: 'c', start: 560, end: 700 },
+    ];
+    const one = assignLanes(items);
+    const two = assignLanes([...items].reverse());
+    for (const i of items) expect(one.get(i.id)).toEqual(two.get(i.id));
+    expect(one.get('a')!.lanes).toBe(3);
+  });
+
+  it('turns a lane into percentages and gives rounds distinct colours', () => {
+    expect(laneStyle({ lane: 0, lanes: 1 })).toEqual({ left: '0%', width: '100%' });
+    const second = laneStyle({ lane: 1, lanes: 2 });
+    expect(parseFloat(second.left)).toBeGreaterThan(50);
+    expect(parseFloat(second.left) + parseFloat(second.width)).toBeCloseTo(100, 5);
+    expect(roundColour(0).fill).not.toBe(roundColour(1).fill);
+  });
+});

@@ -100,3 +100,88 @@ export function shiftMonth(date: string, by: number): string {
   const d = new Date(Date.UTC(y, m - 1 + by, 1, 12));
   return d.toISOString().slice(0, 10);
 }
+
+// ---- the time grid (day and week views) ----
+
+/** "09:30" -> 570. */
+export function toMinutes(t: string): number {
+  const [h, m] = t.split(':').map(Number);
+  return h * 60 + m;
+}
+
+/** 570 -> "09:30". */
+export function fromMinutes(min: number): string {
+  const c = Math.min(Math.max(Math.round(min), 0), 24 * 60 - 1);
+  return `${String(Math.floor(c / 60)).padStart(2, '0')}:${String(c % 60).padStart(2, '0')}`;
+}
+
+/** Round to the nearest quarter hour. */
+export const snapQuarter = (min: number) => Math.round(min / 15) * 15;
+
+/** A round with only a start time is drawn this long, and labelled as a guess. */
+export const DEFAULT_ROUND_MINUTES = 60;
+
+/**
+ * The hours the grid shows: at least 07:00 to 19:00, widened to include any call window or timed round,
+ * so nothing is ever drawn off the edge. Whole hours.
+ */
+export function hourRange(spans: { start: number; end: number }[]): { minHour: number; maxHour: number } {
+  let min = 7 * 60;
+  let max = 19 * 60;
+  for (const s of spans) {
+    min = Math.min(min, s.start);
+    max = Math.max(max, s.end);
+  }
+  return { minHour: Math.max(0, Math.floor(min / 60)), maxHour: Math.min(24, Math.ceil(max / 60)) };
+}
+
+export type LaneInput = { id: string; start: number; end: number };
+export type LanePlacement = { lane: number; lanes: number };
+
+/**
+ * Where things that happen at the same time sit side by side instead of on top of each other. Events are
+ * clustered (a new cluster starts when one begins at or after everything before it has finished, so
+ * back-to-back is NOT overlapping), then packed into the first free lane; every member of a cluster
+ * shares the cluster's lane count so their edges line up. Order-independent: ties break on length, then id.
+ */
+export function assignLanes(events: LaneInput[]): Map<string, LanePlacement> {
+  const out = new Map<string, LanePlacement>();
+  const sorted = [...events].sort((a, b) => a.start - b.start || b.end - a.end || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  let cluster: LaneInput[] = [];
+  let laneEnds: number[] = [];
+  let clusterEnd = -Infinity;
+  const flush = () => {
+    for (const ev of cluster) out.set(ev.id, { lane: out.get(ev.id)?.lane ?? 0, lanes: laneEnds.length });
+    cluster = [];
+    laneEnds = [];
+    clusterEnd = -Infinity;
+  };
+  for (const ev of sorted) {
+    const end = Math.max(ev.end, ev.start);
+    if (ev.start >= clusterEnd) flush();
+    let lane = laneEnds.findIndex((e) => e <= ev.start);
+    if (lane === -1) {
+      lane = laneEnds.length;
+      laneEnds.push(end);
+    } else laneEnds[lane] = end;
+    out.set(ev.id, { lane, lanes: laneEnds.length });
+    cluster.push(ev);
+    clusterEnd = Math.max(clusterEnd, end);
+  }
+  flush();
+  return out;
+}
+
+/** CSS left/width, as percentages of the day column, for one placement. */
+export function laneStyle({ lane, lanes }: LanePlacement): { left: string; width: string } {
+  if (lanes <= 1) return { left: '0%', width: '100%' };
+  const gap = 1.5;
+  const width = (100 - gap * (lanes - 1)) / lanes;
+  return { left: `${lane * (width + gap)}%`, width: `${width}%` };
+}
+
+/** A pastel fill and a darker edge for the nth round, spread round the colour wheel so neighbours differ. */
+export function roundColour(index: number): { fill: string; accent: string } {
+  const hue = (index * 67 + 205) % 360;
+  return { fill: `hsl(${hue} 70% 90%)`, accent: `hsl(${hue} 55% 38%)` };
+}

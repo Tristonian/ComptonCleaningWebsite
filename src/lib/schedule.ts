@@ -118,7 +118,8 @@ export async function addEntry(input: EntryInput, by: string, db: Db = getDb()):
   if (!kind) return { ok: false, error: 'Pick what to add.' };
   const note = String(input.note ?? '').replace(/\s+/g, ' ').trim().slice(0, 200);
   const starts = cleanTime(input.starts);
-  const ends = cleanTime(input.ends);
+  // A round with no start time is an all-day entry: a finish time on its own means nothing, so drop it.
+  const ends = kind === 'round' && !starts ? null : cleanTime(input.ends);
   let roundId: string | null = null;
   if (kind === 'round') {
     roundId = String(input.roundId ?? '');

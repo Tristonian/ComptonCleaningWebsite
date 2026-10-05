@@ -45,7 +45,10 @@ export async function saveCallHoursAction(form: FormData): Promise<void> {
   // A day that is switched off has no windows at all.
   const windows = form.get('open') === 'on' ? [0, 1].map((i) => ({ opens: text(form, `opens${i}`), closes: text(form, `closes${i}`) })) : [];
   const r = await setCallHours(weekday, windows, a.email, getDb());
-  redirect(flash('/admin/settings', r.ok ? 'ok' : 'error', r.ok ? 'Call hours saved.' : r.error));
+  // Saved from Settings, or from a day's panel on the Calendar (which sends that page's address back).
+  const b = text(form, 'back');
+  const back = /^\/admin\/calendar(\?[\w=&%.\-]*)?$/.test(b) ? b : '/admin/settings';
+  redirect(flash(back, r.ok ? 'ok' : 'error', r.ok ? 'Call hours saved.' : r.error));
 }
 
 export async function saveRoundAction(form: FormData): Promise<void> {
