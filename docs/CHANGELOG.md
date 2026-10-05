@@ -2,6 +2,14 @@
 
 Newest first. Led by what changed for Sam, then the numbers and what is still untested.
 
+## 2026-10-05 (session 7, continued): drag-to-order, pencil-mode call/away pair, calendar as a time grid, email to Sam
+
+- **Drag to order** on the Rounds screen (hold ☰, drag; arrows kept). **Pencil mode** shows both the Call button and the out-of-hours message, labelled, so the hidden one can be edited.
+- **Calendar rebuilt like Rachel's:** time down the side, a column per day (Day / Week / Month), call hours as white bands over a hatch (extra hours greener, dashed), rounds as coloured blocks side by side when they overlap, an all-day strip for rounds with no time, a red "Calls off" wash for a day off, a line for the time now, and a panel that opens on a tap (add at that time, remove a block, change a day or set "usually take calls on Tuesdays"). Month cells show the round names. ⚠️ Not yet seen in a browser.
+- **Email to Sam** (from hello@ via Resend, cc Tristan, reply-to Tristan; Resend accepted it, id `01a10aea-2a28-7d0f-966a-88ce23fa7cc0`) summarising the new features in plain language and saying they are on the test site only.
+
+Numbers: 280 tests pass (35 files), typecheck clean. Staging Worker `331ed76c`; production unchanged (Worker `c157c645`, Neon through 0011).
+
 ## 2026-10-04 (session 7, overnight): calendar, call hours, earnings, route planner
 
 Built unattended while Tristan slept. **On staging only; production still runs the session 6 code.**
@@ -17,7 +25,7 @@ Built unattended while Tristan slept. **On staging only; production still runs t
 
 **Under the hood:** ADRs 0011 and 0012; migrations 0012 (`call_hours`, `schedule_entries`) and 0013 (`jobs.paid_on`); `schedule.ts`, `schedule-shared.ts`, `earnings.ts`, `route.ts` (exact up to 12 stops, 2-opt beyond), `travel.ts` (Mapbox Matrix, chunked, falls back to estimates), `round-plan.ts`. The server calls Mapbox with the site as its referer (checked: 403 without, 200 with); a `MAPBOX_SERVER_TOKEN` secret would be more robust and is optional.
 
-**Numbers:** 275 tests pass in 35 files (52 new), typecheck and build clean. Staging Worker `66976d57`, Neon staging migrated through 0013 (staging call hours were set to a never-open window to prove the away message on the wire, then removed). Production Worker `c157c645`, Neon production only through 0011.
+**Numbers:** 275 tests pass in 35 files (52 new), typecheck and build clean. Staging Worker `331ed76c`, Neon staging migrated through 0013 (staging call hours were set to a never-open window to prove the away message on the wire, then removed). Production Worker `c157c645`, Neon production only through 0011.
 
 **Still untested:** every new screen on a real phone; the planner against real Mapbox through the Worker (only the same request by curl and fakes in tests); the up/down arrows; the calendar's add forms; the CSV opened in a spreadsheet; the away message in Welsh (machine-drafted). Visit photos are still served by the public `/img/<hash>` route (ADR 0009 open question, not changed).
 

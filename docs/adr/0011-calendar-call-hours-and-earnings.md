@@ -22,7 +22,7 @@ HairByRachel's. Decisions:
   visible, because those are messages, not calls. The page was already rendered per request, so no caching change.
   In pencil mode both are shown (`CallSwitch`), labelled "Shown during your call hours" and "Shown out of hours" with
   "showing now" on the live one, so Sam can edit the away wording at any time of day (added later the same day at Tristan's request).
-- **Calendar UI** (`/admin/calendar`): week view as a list of day cards (phone-first), month view as a grid with dots;
+- **Calendar UI** (`/admin/calendar`): first built as a list of day cards, which Tristan found "listy" and hard to read, so it was rebuilt to follow HairByRachel's calendar: a time grid with Day / Week / Month views (`CalendarGrid.tsx`; lane packing, hour range and colours are pure and tested in `schedule-shared.ts`). Call hours are bands over a hatch, rounds coloured blocks, a round with no time sits in an all-day strip, and a round with a start but no finish is drawn an hour long. The usual hours for a weekday can be edited from a day's panel as well as on Settings. Month view shows round names;
   a round that has a usual weekday is offered as a one-tap dashed "+ Nash (usual)". Usual hours live on Settings.
 - **No Google Calendar link.** Tristan chose "build a calendar view like Rachel's" instead of reading Sam's Google
   Calendar, so there is no OAuth scope change and the consent screen stays as it is.
