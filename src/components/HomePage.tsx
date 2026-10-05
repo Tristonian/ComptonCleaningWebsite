@@ -10,6 +10,7 @@ import { getHiddenSections } from '@/lib/sections';
 import { listServices } from '@/lib/services-custom';
 import { getOptions } from '@/lib/form-options';
 import { AppearanceEditor } from '@/components/AppearanceEditor';
+import { CallSwitch } from '@/components/CallSwitch';
 import { HeroHeader } from '@/components/HeroHeader';
 import { HeroMenu, StickyBar } from '@/components/SiteNav';
 import { getAppearance } from '@/lib/appearance';
@@ -69,19 +70,24 @@ export async function HomePage() {
             className="hero-logo"
           />
         </a>
-        {takingCalls ? (
-          <a
-            href={PHONE_TEL}
-            className="hero-fade mx-auto mt-5 flex w-fit items-center gap-2 bg-white px-4 py-2 text-2xl font-bold text-brand-deep"
-          >
-            <span aria-hidden>📞</span>
-            <span>{PHONE_DISPLAY}</span>
-          </a>
-        ) : (
-          <a href="#contact" className="hero-fade mx-auto mt-5 block w-fit max-w-xs bg-white px-4 py-2 text-center text-lg font-bold text-brand-deep">
-            <Ed id="hero.away">{'I’m not working right now. Leave me a message.'}</Ed>
-          </a>
-        )}
+        <CallSwitch
+          where="hero"
+          takingCalls={takingCalls}
+          call={
+            <a
+              href={PHONE_TEL}
+              className="hero-fade mx-auto mt-5 flex w-fit items-center gap-2 bg-white px-4 py-2 text-2xl font-bold text-brand-deep"
+            >
+              <span aria-hidden>📞</span>
+              <span>{PHONE_DISPLAY}</span>
+            </a>
+          }
+          away={
+            <a href="#contact" className="hero-fade mx-auto mt-5 block w-fit max-w-xs bg-white px-4 py-2 text-center text-lg font-bold text-brand-deep">
+              <Ed id="hero.away">{'I’m not working right now. Leave me a message.'}</Ed>
+            </a>
+          }
+        />
         <Ed id="brand.tagline" as="p" className="hero-fade mt-5 text-sm font-bold uppercase tracking-widest">
           Windows | Gutters | Patios
         </Ed>
@@ -194,18 +200,23 @@ export async function HomePage() {
         <Ed id="contact.intro" as="p" rich className="mb-3">
           Contact via text or call
         </Ed>
-        {takingCalls ? (
-          <a
-            href={PHONE_TEL}
-            className="mb-3 block rounded-xl bg-brand-deep px-4 py-3 text-center text-lg font-bold text-white"
-          >
-            <Ed id="nav.call">Call</Ed> {PHONE_DISPLAY}
-          </a>
-        ) : (
-          <Ed id="contact.away" as="p" className="mb-3 rounded-xl bg-brand/10 px-4 py-3 text-center text-lg font-bold text-brand-deep">
-            {'I’m not working right now. Leave me a message.'}
-          </Ed>
-        )}
+        <CallSwitch
+          where="contact"
+          takingCalls={takingCalls}
+          call={
+            <a
+              href={PHONE_TEL}
+              className="mb-3 block rounded-xl bg-brand-deep px-4 py-3 text-center text-lg font-bold text-white"
+            >
+              <Ed id="nav.call">Call</Ed> {PHONE_DISPLAY}
+            </a>
+          }
+          away={
+            <Ed id="contact.away" as="p" className="mb-3 rounded-xl bg-brand/10 px-4 py-3 text-center text-lg font-bold text-brand-deep">
+              {'I’m not working right now. Leave me a message.'}
+            </Ed>
+          }
+        />
         <div className="mb-6 grid grid-cols-3 gap-3 text-center font-bold text-brand-deep">
           <a href={PHONE_SMS} className="rounded-xl px-2 py-3 ring-2 ring-brand-deep">
             <Ed id="nav.text">Text</Ed>

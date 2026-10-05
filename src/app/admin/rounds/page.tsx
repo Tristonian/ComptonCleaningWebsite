@@ -3,7 +3,8 @@ import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { listCustomers, listRoundOrder, listRounds } from '@/lib/customers';
 import { addRoundAction } from '../customers/actions';
-import { applyRoundPlanAction, moveInRoundAction, saveRoundAction } from '../settings/actions';
+import { applyRoundPlanAction, saveRoundAction } from '../settings/actions';
+import { RoundOrderList } from '@/components/admin/RoundOrderList';
 import { planRound } from '@/lib/round-plan';
 import { formatDrive, mapsLinks } from '@/lib/route';
 import { BASE } from '@/lib/weather';
@@ -13,7 +14,6 @@ export const metadata = { title: 'Rounds', robots: { index: false, follow: false
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const input = 'rounded-xl border border-ink/20 bg-white p-3 text-base';
-const arrow = 'flex h-11 w-11 items-center justify-center rounded-lg text-lg font-black text-brand-deep ring-1 ring-brand-deep/40 disabled:opacity-30';
 
 export default async function RoundsPage({ searchParams }: { searchParams: Promise<{ round?: string; plan?: string; home?: string; ok?: string; error?: string }> }) {
   const admin = await requireAdmin();
@@ -167,33 +167,16 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
 
             <section>
               <h2 className="text-lg font-black text-brand-deep">Order of stops</h2>
-              <p className="mb-2 text-sm text-ink/70">The order you work this round. The Work screen lists a round in this order.</p>
+              <p className="mb-2 text-sm text-ink/70">The order you work this round. Hold ☰ and drag a stop, or use the arrows. The Work screen lists a round in this order.</p>
               {stops.length === 0 ? (
                 <p className="rounded-xl bg-white p-6 text-center text-ink/70 ring-1 ring-ink/10">
                   Nobody is in this round yet. Add people from the customer page, or use “Set up several” on the Customers screen.
                 </p>
               ) : (
-                <ol className="flex flex-col gap-2">
-                  {stops.map((c, i) => (
-                    <li key={c.id} className="flex items-center gap-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-ink/10">
-                      <span className="w-6 shrink-0 text-center font-black text-ink/60">{i + 1}</span>
-                      <a href={`/admin/customers/${c.id}`} className="min-w-0 flex-1">
-                        <span className="block truncate font-bold">{c.address || c.name}</span>
-                        <span className="block truncate text-sm text-ink/70">{c.address ? c.name : ''}</span>
-                      </a>
-                      {(['up', 'down'] as const).map((step) => (
-                        <form key={step} action={moveInRoundAction}>
-                          <input type="hidden" name="roundId" value={round.id} />
-                          <input type="hidden" name="customerId" value={c.id} />
-                          <input type="hidden" name="step" value={step} />
-                          <button type="submit" disabled={step === 'up' ? i === 0 : i === stops.length - 1} aria-label={`Move ${c.name} ${step}`} className={arrow}>
-                            {step === 'up' ? '↑' : '↓'}
-                          </button>
-                        </form>
-                      ))}
-                    </li>
-                  ))}
-                </ol>
+                <RoundOrderList
+                  roundId={round.id}
+                  stops={stops.map((c) => ({ id: c.id, title: c.address || c.name, subtitle: c.address ? c.name : '' }))}
+                />
               )}
             </section>
           </>

@@ -20,7 +20,8 @@ HairByRachel's. Decisions:
 - **Public page.** The hero phone link and the contact section's Call button are swapped for the away message
   (`<Ed id="hero.away">` and `<Ed id="contact.away">`, editable and Welsh-drafted). Text, WhatsApp and Email stay
   visible, because those are messages, not calls. The page was already rendered per request, so no caching change.
-  Known limit: while the button shows, the away wording is not on the page, so the pencil cannot edit it then.
+  In pencil mode both are shown (`CallSwitch`), labelled "Shown during your call hours" and "Shown out of hours" with
+  "showing now" on the live one, so Sam can edit the away wording at any time of day (added later the same day at Tristan's request).
 - **Calendar UI** (`/admin/calendar`): week view as a list of day cards (phone-first), month view as a grid with dots;
   a round that has a usual weekday is offered as a one-tap dashed "+ Nash (usual)". Usual hours live on Settings.
 - **No Google Calendar link.** Tristan chose "build a calendar view like Rachel's" instead of reading Sam's Google
@@ -42,12 +43,11 @@ The CSV holds customer names, so it is personal data: it is never written to the
 ## Other changes in the same session
 
 Payment methods can be added, renamed and removed (a method that any visit or customer uses cannot be removed);
-rounds can be renamed, given a day and ordered (up/down buttons; arrows rather than drag because they are reliable
-on a phone); "Set up several" sets price, frequency, round and usual payment for ticked customers; a customer's
+rounds can be renamed, given a day and ordered (drag the ☰ handle, with up/down arrows as the keyboard-friendly alternative; each change saves at once); "Set up several" sets price, frequency, round and usual payment for ticked customers; a customer's
 last-cleaned date can be corrected; after DONE the Work screen offers "Add photos" for that visit, and the visit
 list shows photo counts.
 
 ## Why it might be undone
 
 Sam may want Google Calendar to drive call hours after all (add a scope or an iCal feed and feed it into
-`schedule_entries`). Drag-to-order may be wanted once the arrows have been tried on a phone.
+`schedule_entries`). Drag-to-order is pointer-event based (`RoundOrderList`), not the HTML5 drag API, which does not work on touch screens.

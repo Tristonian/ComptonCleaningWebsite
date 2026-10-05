@@ -36,4 +36,4 @@ the robust fix and is a hand step for Tristan (`wrangler secret put MAPBOX_SERVE
 ## Not done
 
 No road-following line on the admin map; Mapbox Optimization API (it caps at 12 stops, our own solver does more);
-live traffic; per-customer time windows or service durations; drag-to-order (arrows instead).
+live traffic; per-customer time windows or service durations.

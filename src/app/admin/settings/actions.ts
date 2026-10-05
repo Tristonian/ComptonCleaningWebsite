@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { getAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { addPaymentMethod, moveInRound, removePaymentMethod, renamePaymentMethod, setRoundOrder, updateRound } from '@/lib/customers';
+import { addPaymentMethod, removePaymentMethod, renamePaymentMethod, setRoundOrder, updateRound } from '@/lib/customers';
 import { setCallHours } from '@/lib/schedule';
 
 /**
@@ -54,11 +54,12 @@ export async function saveRoundAction(form: FormData): Promise<void> {
   redirect(flash('/admin/rounds', r.ok ? 'ok' : 'error', r.ok ? 'Round saved.' : r.error));
 }
 
-export async function moveInRoundAction(form: FormData): Promise<void> {
-  const a = await admin();
-  const round = text(form, 'roundId');
-  const r = await moveInRound(round, text(form, 'customerId'), text(form, 'step') === 'up' ? -1 : 1, a.email, getDb());
-  redirect(flash(`/admin/rounds?round=${/^\d+$/.test(round) ? round : ''}`, r.ok ? 'ok' : 'error', r.ok ? 'Moved.' : r.error));
+/** Called by the drag-to-order list. Returns a result so the list can stay on the page. */
+export async function saveRoundOrderAction(roundId: string, ids: string[]): Promise<{ ok: boolean; error?: string }> {
+  const a = await getAdmin();
+  if (!a) return { ok: false, error: 'Not signed in.' };
+  if (!Array.isArray(ids) || ids.length > 2000) return { ok: false, error: 'That order does not look right.' };
+  return setRoundOrder(String(roundId), ids.map(String), a.email, getDb());
 }
 
 /** Save the order the planner proposed. The ids come back from the page, but only members of the round are used. */

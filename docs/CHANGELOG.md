@@ -17,7 +17,7 @@ Built unattended while Tristan slept. **On staging only; production still runs t
 
 **Under the hood:** ADRs 0011 and 0012; migrations 0012 (`call_hours`, `schedule_entries`) and 0013 (`jobs.paid_on`); `schedule.ts`, `schedule-shared.ts`, `earnings.ts`, `route.ts` (exact up to 12 stops, 2-opt beyond), `travel.ts` (Mapbox Matrix, chunked, falls back to estimates), `round-plan.ts`. The server calls Mapbox with the site as its referer (checked: 403 without, 200 with); a `MAPBOX_SERVER_TOKEN` secret would be more robust and is optional.
 
-**Numbers:** 275 tests pass in 35 files (52 new), typecheck and build clean. Staging Worker `6ccd3062`, Neon staging migrated through 0013 (staging call hours were set to a never-open window to prove the away message on the wire, then removed). Production Worker `c157c645`, Neon production only through 0011.
+**Numbers:** 275 tests pass in 35 files (52 new), typecheck and build clean. Staging Worker `66976d57`, Neon staging migrated through 0013 (staging call hours were set to a never-open window to prove the away message on the wire, then removed). Production Worker `c157c645`, Neon production only through 0011.
 
 **Still untested:** every new screen on a real phone; the planner against real Mapbox through the Worker (only the same request by curl and fakes in tests); the up/down arrows; the calendar's add forms; the CSV opened in a spreadsheet; the away message in Welsh (machine-drafted). Visit photos are still served by the public `/img/<hash>` route (ADR 0009 open question, not changed).
 
