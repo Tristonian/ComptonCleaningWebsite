@@ -70,3 +70,30 @@ describe('planRound', () => {
     expect(await listRoundOrder(round, db)).toEqual(plan.stops.map((s) => s.id));
   });
 });
+
+describe('planRound start point', () => {
+  it('starts from the given position instead of home, and says so', async () => {
+    const { db } = await makeTestDb();
+    const r = await createRound({ name: 'Nash', weekday: 1 }, 's', db);
+    if (!r.ok) throw new Error('round');
+    const add = async (name: string, lng: number) => {
+      const c = await createCustomer({ name, address: `${name} Road`, lat: 51.5, lng }, 's', db);
+      if (!c.ok) throw new Error(c.error);
+      await bulkSetup([c.id], { roundId: r.id }, 's', db);
+      return c.id;
+    };
+    // Home is at lng -2.5. One stop just west of it, one far east, one just east of the far one.
+    const west = await add('West', -2.52);
+    const east = await add('East', -2.2);
+    const farEast = await add('FarEast', -2.15);
+    const fromHome = await planRound(r.id, { db, travel, returnHome: false });
+    expect(fromHome.fromHere).toBe(false);
+    expect(fromHome.start).toEqual({ lat: 51.5, lng: -2.5 });
+    expect(fromHome.stops[0].id).toBe(west);
+    // Standing out east, the first stop is the nearest to there, not to home.
+    const here = await planRound(r.id, { db, travel, returnHome: false, start: { lat: 51.5, lng: -2.14 } });
+    expect(here.fromHere).toBe(true);
+    expect(here.start).toEqual({ lat: 51.5, lng: -2.14 });
+    expect(here.stops.map((s) => s.id)).toEqual([farEast, east, west]);
+  });
+});

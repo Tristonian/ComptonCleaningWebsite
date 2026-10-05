@@ -20,8 +20,7 @@ hand the day to turn-by-turn navigation.
 - **Solver** (`src/lib/route.ts`, pure): exact (Held-Karp) up to 12 stops; beyond that nearest-neighbour then 2-opt and
   single-stop relocation until nothing improves. Durations may be asymmetric, so each candidate is costed in full.
   Tested against brute force.
-- **Start and finish.** Starts from Sam's base (`BASE` in `weather.ts`, Lyde Green); by default the drive home is counted,
-  with a switch to plan a day that ends at the last stop.
+- **Start and finish.** The preview starts from Sam's base (`BASE` in `weather.ts`, Lyde Green). A small "Start from: Home / Where I am" toggle (`StartFromHere`) switches it to the phone's position, so the first stop is the nearest to where he really is (fixed 2026-10-05 after Tristan found the plan always began at the base). The position is kept in an httpOnly cookie for two hours (`plan-start.ts`), never in a URL; the Maps links start from it too. By default the drive back to the start is counted, with a switch to plan a day that ends at the last stop.
 - **Needs a pin.** Customers with no location cannot be placed; they are listed under the plan and left where they are.
 
 ## The Mapbox token

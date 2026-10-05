@@ -1,6 +1,9 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
+import { PLAN_START_COOKIE, PLAN_START_MAX_AGE_SECONDS, serialisePlanStart } from '@/lib/plan-start';
+import { isPlausibleUkPoint } from '@/lib/geo';
 import { getAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { addPaymentMethod, removePaymentMethod, renamePaymentMethod, setRoundOrder, updateRound } from '@/lib/customers';
@@ -71,4 +74,26 @@ export async function applyRoundPlanAction(form: FormData): Promise<void> {
   const round = text(form, 'roundId');
   const r = await setRoundOrder(round, form.getAll('ids').map(String), a.email, getDb());
   redirect(flash(`/admin/rounds?round=${/^\d+$/.test(round) ? round : ''}`, r.ok ? 'ok' : 'error', r.ok ? 'Order saved. The Work screen now follows it.' : r.error));
+}
+
+/** Remember the phone's position for two hours so the route planner can start from it. Never put in a URL. */
+export async function setPlanStartAction(lat: number, lng: number): Promise<{ ok: boolean }> {
+  const a = await getAdmin();
+  if (!a) return { ok: false };
+  if (typeof lat !== 'number' || typeof lng !== 'number' || !isPlausibleUkPoint(lat, lng)) return { ok: false };
+  (await cookies()).set(PLAN_START_COOKIE, serialisePlanStart(lat, lng), {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/admin',
+    maxAge: PLAN_START_MAX_AGE_SECONDS,
+  });
+  return { ok: true };
+}
+
+export async function clearPlanStartAction(): Promise<{ ok: boolean }> {
+  const a = await getAdmin();
+  if (!a) return { ok: false };
+  (await cookies()).delete({ name: PLAN_START_COOKIE, path: '/admin' });
+  return { ok: true };
 }

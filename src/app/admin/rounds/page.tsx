@@ -5,9 +5,11 @@ import { listCustomers, listRoundOrder, listRounds } from '@/lib/customers';
 import { addRoundAction } from '../customers/actions';
 import { applyRoundPlanAction, saveRoundAction } from '../settings/actions';
 import { RoundOrderList } from '@/components/admin/RoundOrderList';
+import { cookies } from 'next/headers';
 import { planRound } from '@/lib/round-plan';
+import { StartFromHere } from '@/components/admin/StartFromHere';
+import { PLAN_START_COOKIE, parsePlanStart } from '@/lib/plan-start';
 import { formatDrive, mapsLinks } from '@/lib/route';
-import { BASE } from '@/lib/weather';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Rounds', robots: { index: false, follow: false } };
@@ -26,7 +28,9 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
   const stops = order.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const mode = sp.plan === 'due' ? 'due' : sp.plan === 'all' ? 'all' : null;
   const returnHome = sp.home !== '0';
-  const plan = round && mode ? await planRound(round.id, { mode, returnHome, db }) : null;
+  const saved = parsePlanStart((await cookies()).get(PLAN_START_COOKIE)?.value);
+  const plan = round && mode ? await planRound(round.id, { mode, returnHome, db, start: saved ? { lat: saved.lat, lng: saved.lng } : undefined }) : null;
+  const since = saved ? new Date(saved.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' }) : undefined;
   const planHref = (m: string, home = returnHome) => `/admin/rounds?round=${round?.id}&plan=${m}${home ? '' : '&home=0'}`;
 
   return (
@@ -84,8 +88,9 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
             <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-ink/10">
               <h2 className="text-lg font-black text-brand-deep">🧭 Best order</h2>
               <p className="mt-1 text-sm text-ink/70">
-                Works out the quickest way round using real drive times (a fast road counts for more than a lane), starting from home. Only customers with a pin on the map can be placed.
+                Works out the quickest way round using real drive times (a fast road counts for more than a lane), starting from where you are, or from home. Only customers with a pin on the map can be placed.
               </p>
+              <StartFromHere fromHere={saved !== null} since={since} />
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <a href={planHref('all')} className="flex min-h-12 items-center justify-center rounded-xl px-3 text-center text-sm font-bold text-brand-deep ring-1 ring-brand-deep/40 active:bg-brand/10">
                   Whole round
@@ -112,7 +117,7 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
                   ) : (
                     <>
                       <p className="text-sm font-bold">
-                        {plan.stops.length} stop{plan.stops.length === 1 ? '' : 's'} · {formatDrive(plan.totalSeconds)} driving{plan.returnHome ? ' including the way home' : ''}
+                        {plan.stops.length} stop{plan.stops.length === 1 ? '' : 's'} · {formatDrive(plan.totalSeconds)} driving{plan.returnHome ? (plan.fromHere ? ' including the way back to where you started' : ' including the way home') : ''}
                         {plan.source === 'estimate' ? ' (estimated)' : ''}
                       </p>
                       {plan.currentSeconds - plan.totalSeconds >= 60 ? (
@@ -128,7 +133,7 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
                             <span className="shrink-0 text-ink/70">{formatDrive(plan.legs[i])}</span>
                           </li>
                         ))}
-                        {plan.returnHome && <li className="pl-8 text-sm text-ink/70">Home · {formatDrive(plan.legs[plan.legs.length - 1])}</li>}
+                        {plan.returnHome && <li className="pl-8 text-sm text-ink/70">{plan.fromHere ? 'Back to start' : 'Home'} · {formatDrive(plan.legs[plan.legs.length - 1])}</li>}
                       </ol>
                       {plan.truncated > 0 && <p className="mt-2 text-sm text-amber-900">{plan.truncated} more stop{plan.truncated === 1 ? ' was' : 's were'} left out: one plan covers up to 36.</p>}
                       <form action={applyRoundPlanAction} className="mt-3">
@@ -141,7 +146,7 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
                         </button>
                       </form>
                       <div className="mt-2 flex flex-col gap-2">
-                        {mapsLinks(BASE, plan.stops, plan.returnHome).map((l) => (
+                        {mapsLinks(plan.start, plan.stops, plan.returnHome).map((l) => (
                           <a key={l.url} href={l.url} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center justify-center rounded-xl text-base font-bold text-brand-deep ring-1 ring-brand-deep/40 active:bg-brand/10">
                             🗺️ {l.label}
                           </a>

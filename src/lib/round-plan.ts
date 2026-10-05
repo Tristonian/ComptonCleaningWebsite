@@ -8,7 +8,7 @@ import { BASE } from '@/lib/weather';
 
 /**
  * Work out the best order to do a round (ADR 0012): the customers of one round who have a pin, ordered to
- * minimise drive time from Sam's base. `mode: 'due'` plans only those due this week. Customers without a
+ * minimise drive time from where Sam starts: his phone's position when he shares it, else his base. `mode: 'due'` plans only those due this week. Customers without a
  * pin cannot be placed, so they are listed separately and left where they are.
  */
 
@@ -28,19 +28,24 @@ export type Plan = {
   /** More stops than one plan covers: only the first MAX_STOPS in the current order were planned. */
   truncated: number;
   returnHome: boolean;
+  /** Where the day starts (and ends, when coming back): the phone's position or the home base. */
+  start: Point;
+  fromHere: boolean;
 };
 
 export type PlanMode = 'all' | 'due';
 
 export async function planRound(
   roundId: string,
-  opts: { mode?: PlanMode; returnHome?: boolean; today?: string; db?: Db; travel?: (points: Point[]) => Promise<TravelMatrix> } = {},
+  opts: { mode?: PlanMode; returnHome?: boolean; today?: string; db?: Db; travel?: (points: Point[]) => Promise<TravelMatrix>; start?: Point } = {},
 ): Promise<Plan> {
   const db = opts.db ?? getDb();
   const mode = opts.mode ?? 'all';
   const returnHome = opts.returnHome ?? true;
   const today = opts.today ?? todayLondon();
   const travel = opts.travel ?? ((p: Point[]) => travelMatrix(p));
+  const start: Point = opts.start ?? BASE;
+  const fromHere = opts.start !== undefined;
 
   const [members, order] = await Promise.all([listCustomers({ roundId }, db), listRoundOrder(roundId, db)]);
   const weekEnd = endOfWeek(today);
@@ -53,9 +58,9 @@ export async function planRound(
   const stops: PlanStop[] = planned.map((c) => ({ id: c.id, name: c.name, address: c.address, lat: c.lat as number, lng: c.lng as number }));
 
   if (stops.length === 0) {
-    return { stops: [], legs: [], totalSeconds: 0, currentSeconds: 0, source: 'estimate', unlocated, truncated: 0, returnHome };
+    return { stops: [], legs: [], totalSeconds: 0, currentSeconds: 0, source: 'estimate', unlocated, truncated: 0, returnHome, start, fromHere };
   }
-  const matrix = await travel([BASE, ...stops]);
+  const matrix = await travel([start, ...stops]);
   const best = optimiseOrder(matrix.seconds, returnHome);
   const current = stops.map((_, i) => i + 1);
   return {
@@ -68,5 +73,7 @@ export async function planRound(
     unlocated,
     truncated: located.length - planned.length,
     returnHome,
+    start,
+    fromHere,
   };
 }

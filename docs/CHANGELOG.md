@@ -6,6 +6,8 @@ Newest first. Led by what changed for Sam, then the numbers and what is still un
 
 - **Drag to order** on the Rounds screen (hold ☰, drag; arrows kept). **Pencil mode** shows both the Call button and the out-of-hours message, labelled, so the hidden one can be edited.
 - **Calendar rebuilt like Rachel's:** time down the side, a column per day (Day / Week / Month), call hours as white bands over a hatch (extra hours greener, dashed), rounds as coloured blocks side by side when they overlap, an all-day strip for rounds with no time, a red "Calls off" wash for a day off, a line for the time now, and a panel that opens on a tap (add at that time, remove a block, change a day or set "usually take calls on Tuesdays"). Month cells show the round names. ⚠️ Not yet seen in a browser.
+- **Route planner starts from where you are.** It always began at the Lyde Green base; a small "Start from: Home / Where I am" toggle now switches the preview to the phone's location (kept two hours in a cookie, never in the address), and the Maps links follow it.
+- **Drag feel:** the dragged row now lifts, shrinks a little and follows the thumb with a dashed gap where it will land; other rows slide out of the way; letting go glides it into place. Not yet felt on a phone.
 - **Email to Sam** (from hello@ via Resend, cc Tristan, reply-to Tristan; Resend accepted it, id `01a10aea-2a28-7d0f-966a-88ce23fa7cc0`) summarising the new features in plain language and saying they are on the test site only.
 
 Numbers: 280 tests pass (35 files), typecheck clean. Staging Worker `331ed76c`; production unchanged (Worker `c157c645`, Neon through 0011).
