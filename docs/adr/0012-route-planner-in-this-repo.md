@@ -32,6 +32,10 @@ the `Referer` header, which a server-side call does not have, so the server stat
 A secret `MAPBOX_SERVER_TOKEN` (a token without URL restriction, Matrix scope) takes precedence if one is ever set; that is
 the robust fix and is a hand step for Tristan (`wrangler secret put MAPBOX_SERVER_TOKEN`, then check it is non-empty).
 
+## Building a round on the fly
+
+From the Rounds screen (or the admin Home card) Sam can tick customers who are due this week, name a round and build it; it opens on its best-order preview. It is an ordinary round: customers keep any other rounds, and it can be deleted afterwards (customers are untouched), so one-off rounds do not pile up forever.
+
 ## Not done
 
 No road-following line on the admin map; Mapbox Optimization API (it caps at 12 stops, our own solver does more);

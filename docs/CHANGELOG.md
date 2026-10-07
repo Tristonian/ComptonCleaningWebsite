@@ -2,6 +2,12 @@
 
 Newest first. Led by what changed for Sam, then the numbers and what is still untested.
 
+## 2026-10-07: drag rewritten, rounds on the Home screen, build a round from who's due
+
+- **Drag-to-order rebuilt** after it buzzed the thumb on every step and could hide the row. No vibration at all; the floating copy is moved directly instead of re-rendering on every touch move; slide-aside positions are measured from the page top so scrolling while dragging cannot make every row "move"; the original row is only faded, never hidden; any way the drag ends (lift, cancel, tab hidden, leaving the page) removes the copy and releases the scroll lock; the page cannot scroll or pull-to-refresh under a drag. ⚠️ Not yet felt on a phone.
+- **Admin Home** now opens with a bold "Rounds and best order" card: 🧭 Best order, ➕ Build from who's due, and a chip per round that opens straight on its best order. The round tabs keep the plan mode.
+- **Build a round on the fly** (Rounds screen, or from Home): everyone due this week (overdue first) is listed ticked; untick who you are not doing, name it, Build. It opens on its best-order preview. Customers keep any rounds they are in. A round can be deleted from its page (customers untouched). `createRoundFrom` and `deleteRound`; 3 new tests (287 total). Staging Worker `1f636769`.
+
 ## 2026-10-05 (session 7, continued): drag-to-order, pencil-mode call/away pair, calendar as a time grid, email to Sam
 
 - **Drag to order** on the Rounds screen (hold ☰, drag; arrows kept). **Pencil mode** shows both the Call button and the out-of-hours message, labelled, so the hidden one can be edited.

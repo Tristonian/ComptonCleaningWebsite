@@ -1,9 +1,11 @@
 import { AdminBar } from '@/components/AdminBar';
 import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { listCustomers, listRoundOrder, listRounds } from '@/lib/customers';
+import { listCustomers, listRoundOrder, listRounds, todayLondon } from '@/lib/customers';
 import { addRoundAction } from '../customers/actions';
-import { applyRoundPlanAction, saveRoundAction } from '../settings/actions';
+import { applyRoundPlanAction, deleteRoundAction, saveRoundAction } from '../settings/actions';
+import { BuildRound, type DueCustomer } from '@/components/admin/BuildRound';
+import { endOfWeek } from '@/lib/jobs';
 import { RoundOrderList } from '@/components/admin/RoundOrderList';
 import { cookies } from 'next/headers';
 import { planRound } from '@/lib/round-plan';
@@ -17,7 +19,7 @@ export const metadata = { title: 'Rounds', robots: { index: false, follow: false
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const input = 'rounded-xl border border-ink/20 bg-white p-3 text-base';
 
-export default async function RoundsPage({ searchParams }: { searchParams: Promise<{ round?: string; plan?: string; home?: string; ok?: string; error?: string }> }) {
+export default async function RoundsPage({ searchParams }: { searchParams: Promise<{ round?: string; plan?: string; home?: string; build?: string; ok?: string; error?: string }> }) {
   const admin = await requireAdmin();
   const sp = await searchParams;
   const db = getDb();
@@ -25,6 +27,12 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
   const round = rounds.find((r) => r.id === sp.round) ?? rounds[0];
   const [everyone, order] = round ? await Promise.all([listCustomers({ roundId: round.id }, db), listRoundOrder(round.id, db)]) : [[], []];
   const byId = new Map(everyone.map((c) => [c.id, c]));
+  const today = todayLondon();
+  const short = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const weekEnd = endOfWeek(today);
+  const dueNow: DueCustomer[] = (await listCustomers({ filter: 'due', today: weekEnd }, db))
+    .filter((c) => c.nextDue !== null && c.nextDue <= weekEnd)
+    .map((c) => ({ id: c.id, name: c.name, address: c.address, due: short(c.nextDue as string), overdue: (c.nextDue as string) < today, rounds: c.rounds.map((r) => r.name), hasPin: c.lat !== null && c.lng !== null }));
   const stops = order.map((id) => byId.get(id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
   const mode = sp.plan === 'due' ? 'due' : sp.plan === 'all' ? 'all' : null;
   const returnHome = sp.home !== '0';
@@ -51,7 +59,7 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
             {rounds.map((r) => (
               <a
                 key={r.id}
-                href={`/admin/rounds?round=${r.id}`}
+                href={`/admin/rounds?round=${r.id}${mode ? `&plan=${mode}` : ""}${returnHome ? "" : "&home=0"}`}
                 aria-current={round?.id === r.id ? 'page' : undefined}
                 className={`whitespace-nowrap rounded-full px-3 py-2 text-sm font-bold ${round?.id === r.id ? 'bg-amber-200 text-amber-950' : 'text-ink/80 ring-1 ring-ink/30'}`}
               >
@@ -60,6 +68,12 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
             ))}
           </nav>
         )}
+
+        <details className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-ink/10" open={sp.build === '1' || rounds.length === 0}>
+          <summary className="cursor-pointer text-lg font-black text-brand-deep">➕ Build a round from who’s due ({dueNow.length})</summary>
+          <p className="mb-3 mt-1 text-sm text-ink/70">Everyone due this week, overdue first. Untick anyone you are not doing, name the round and build it; it opens on its best order.</p>
+          <BuildRound customers={dueNow} defaultName={`Due ${short(today)}`} />
+        </details>
 
         {round ? (
           <>
@@ -186,11 +200,27 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
             </section>
           </>
         ) : (
-          <p className="rounded-xl bg-white p-6 text-center text-ink/70 ring-1 ring-ink/10">No rounds yet. Add one below.</p>
+          <p className="rounded-xl bg-white p-6 text-center text-ink/70 ring-1 ring-ink/10">No rounds yet. Build one from who’s due above, or add one below.</p>
         )}
 
-        <details className="rounded-xl bg-white p-3 ring-1 ring-ink/10" open={rounds.length === 0}>
-          <summary className="cursor-pointer text-sm font-bold text-brand-deep">Add a round</summary>
+        {round && (
+          <details className="rounded-xl bg-red-50 p-3 ring-1 ring-red-200">
+            <summary className="cursor-pointer text-sm font-bold text-red-900">Delete the round “{round.name}”</summary>
+            <p className="mt-2 text-sm text-red-900/80">Removes the round and its place in the calendar. The customers in it are not touched.</p>
+            <form action={deleteRoundAction} className="mt-2 flex items-center gap-3">
+              <input type="hidden" name="id" value={round.id} />
+              <label className="flex items-center gap-2 text-sm font-semibold text-red-900">
+                <input type="checkbox" name="confirm" className="h-5 w-5" /> Yes, delete it
+              </label>
+              <button type="submit" className="ml-auto rounded-xl bg-red-700 px-4 py-2 font-bold text-white">
+                Delete
+              </button>
+            </form>
+          </details>
+        )}
+
+        <details className="rounded-xl bg-white p-3 ring-1 ring-ink/10">
+          <summary className="cursor-pointer text-sm font-bold text-brand-deep">Add an empty round</summary>
           <form action={addRoundAction} className="mt-3 flex flex-wrap items-end gap-2">
             <input type="hidden" name="back" value="/admin/rounds" />
             <label className="min-w-0 flex-1 text-sm font-semibold text-ink/80">

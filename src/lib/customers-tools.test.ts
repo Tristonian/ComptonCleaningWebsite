@@ -6,6 +6,8 @@ import {
   bulkSetup,
   createCustomer,
   createRound,
+  createRoundFrom,
+  deleteRound,
   getCustomer,
   listPaymentMethods,
   listRoundOrder,
@@ -144,5 +146,45 @@ describe('bulk setup and last cleaned', () => {
     expect((await updateCustomer(a, { name: 'Ann', address: 'x', lastCleaned: '2026-02-30' }, 's', db)).ok).toBe(false);
     await updateCustomer(a, { name: 'Ann', address: 'x', lastCleaned: '' }, 's', db);
     expect((await getCustomer(a, db))?.baselineDoneOn).toBeNull();
+  });
+});
+
+describe('building a round on the fly', () => {
+  let db: Db;
+  beforeEach(async () => {
+    ({ db } = await makeTestDb());
+  });
+
+  it('makes a round from ticked customers in the order given, keeping their other rounds', async () => {
+    const old = await createRound({ name: 'Old', weekday: 1 }, 's', db);
+    if (!old.ok) throw new Error('round');
+    const a = await person(db, 'Ann');
+    const b = await person(db, 'Bob');
+    const c = await person(db, 'Cara');
+    await bulkSetup([a], { roundId: old.id }, 's', db);
+    const made = await createRoundFrom({ name: 'Thursday 8 Oct', weekday: 4 }, [c, a, b, a, 'x'], 's', db);
+    expect(made).toMatchObject({ ok: true, added: 3 });
+    if (!made.ok) throw new Error('made');
+    expect(await listRoundOrder(made.id, db)).toEqual([c, a, b]);
+    expect((await getCustomer(a, db))?.rounds.map((r) => r.name).sort()).toEqual(['Old', 'Thursday 8 Oct']);
+  });
+
+  it('refuses an empty selection or a taken name, and leaves nothing behind', async () => {
+    const a = await person(db, 'Ann');
+    expect((await createRoundFrom({ name: 'X' }, [], 's', db)).ok).toBe(false);
+    expect((await createRoundFrom({ name: '' }, [a], 's', db)).ok).toBe(false);
+    expect((await createRoundFrom({ name: 'Dup' }, [a], 's', db)).ok).toBe(true);
+    expect((await createRoundFrom({ name: 'Dup' }, [a], 's', db)).ok).toBe(false);
+    expect((await db.query<{ n: number }>('SELECT count(*)::int AS n FROM rounds'))[0].n).toBe(1);
+  });
+
+  it('deletes a round but not its customers', async () => {
+    const a = await person(db, 'Ann');
+    const made = await createRoundFrom({ name: 'Temp' }, [a], 's', db);
+    if (!made.ok) throw new Error('made');
+    expect((await deleteRound(made.id, 's', db)).ok).toBe(true);
+    expect((await getCustomer(a, db))?.rounds).toEqual([]);
+    expect((await deleteRound(made.id, 's', db)).ok).toBe(false);
+    expect((await deleteRound('x', 's', db)).ok).toBe(false);
   });
 });

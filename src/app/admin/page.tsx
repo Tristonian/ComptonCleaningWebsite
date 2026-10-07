@@ -2,7 +2,7 @@ import { AdminBar } from '@/components/AdminBar';
 import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
 import { enquiryCounts } from '@/lib/enquiries-admin';
-import { todayLondon } from '@/lib/customers';
+import { listRounds, todayLondon } from '@/lib/customers';
 import { BASE, getForecast } from '@/lib/weather';
 import { WeatherWeek } from '@/components/admin/WeatherWeek';
 
@@ -20,6 +20,8 @@ export default async function AdminHome() {
   });
 
   const forecast = await getForecast(BASE.lat, BASE.lng);
+  // A hiccup here only means the round shortcuts are left out.
+  const rounds = await listRounds(getDb()).catch(() => []);
 
   return (
     <>
@@ -28,6 +30,28 @@ export default async function AdminHome() {
         <h1 className="text-2xl font-bold text-brand-deep">Admin</h1>
 
         {forecast && <WeatherWeek title="Weather this week, Lyde Green" days={forecast} today={todayLondon()} />}
+
+        <section aria-label="Rounds" className="rounded-2xl bg-brand-deep p-5 text-white shadow-md">
+          <h2 className="text-xl font-black">Rounds and best order</h2>
+          <p className="mt-1 text-sm text-white/85">Plan the quickest way round, or build a round from who’s due.</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <a href="/admin/rounds?plan=due" className="flex min-h-14 items-center justify-center rounded-xl bg-white px-3 text-center text-base font-black text-brand-deep active:bg-white/80">
+              🧭 Best order
+            </a>
+            <a href="/admin/rounds?build=1" className="flex min-h-14 items-center justify-center rounded-xl bg-white px-3 text-center text-base font-black text-brand-deep active:bg-white/80">
+              ➕ Build from who’s due
+            </a>
+          </div>
+          {rounds.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {rounds.map((r) => (
+                <a key={r.id} href={`/admin/rounds?round=${r.id}&plan=due`} className="rounded-full bg-white/15 px-3 py-2 text-sm font-bold ring-1 ring-white/40 active:bg-white/30">
+                  {r.name} <span className="font-normal text-white/80">({r.customers})</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </section>
 
         <a href="/admin/enquiries" className={tile}>
           <span className="flex items-center justify-between gap-3">

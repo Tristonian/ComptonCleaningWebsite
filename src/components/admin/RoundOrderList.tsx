@@ -6,60 +6,60 @@ import { saveRoundOrderAction } from '@/app/admin/settings/actions';
 
 type Stop = { id: string; title: string; subtitle: string };
 
-/** What is being dragged: the floating copy under the finger, and where it was picked up. */
-type Drag = {
-  id: string;
-  /** Pointer position now. */
-  x: number;
-  y: number;
-  /** Where inside the row the finger took hold. */
-  grabX: number;
-  grabY: number;
-  /** The row's size and left edge when picked up. */
-  left: number;
-  width: number;
-  height: number;
-  /** After the drop: the floating copy glides to this top, then disappears. */
-  settleTop: number | null;
-};
-
-const SCALE = 0.94;
+const SCALE = 0.95;
+const SETTLE_MS = 150;
 
 /**
- * A round's stops in the order Sam works them. Hold the ☰ handle: the row lifts, shrinks a little and
- * follows the thumb, a dashed gap shows where it will land, and the other rows slide out of the way. Let go
- * and it glides into the gap. The arrows do the same a step at a time and work from the keyboard. Every
- * change is saved at once; the server action re-checks the session and keeps only members of the round.
+ * A round's stops in the order Sam works them. Hold the ☰ handle: a smaller copy of the row follows the
+ * thumb, the row it came from stays put as a faded, dashed gap showing where it will land, and the other
+ * rows slide aside. Let go and the copy glides into the gap. The arrows do the same a step at a time and
+ * work from the keyboard. Every change is saved at once; the server action re-checks the session.
+ *
+ * Built to be hard to break on a phone:
+ *  - the copy is moved by writing its style directly, not through React state, so a drag is not a stream of
+ *    re-renders;
+ *  - row positions for the slide-aside animation are measured from the top of the PAGE, so scrolling while
+ *    dragging can never look like every row having moved;
+ *  - the original row is only faded, never hidden, so nothing can vanish;
+ *  - however the drag ends (lift, cancel, the tab losing focus, leaving the page) the copy is removed and
+ *    the page's scroll lock is released;
+ *  - no vibration: a buzz on every step was far too much on a thumb.
  */
 export function RoundOrderList({ roundId, stops }: { roundId: string; stops: Stop[] }) {
   const router = useRouter();
   const [items, setItems] = useState(stops);
-  const [drag, setDrag] = useState<Drag | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const rows = useRef(new Map<string, HTMLLIElement>());
-  const tops = useRef(new Map<string, number>());
+  const pageTops = useRef(new Map<string, number>());
+  const ghost = useRef<HTMLDivElement>(null);
   const live = useRef(items);
   live.current = items;
+  const cleanup = useRef<(() => void) | null>(null);
 
   // A fresh order from the server (after a save or a planner run) replaces what is shown.
   useEffect(() => setItems(stops), [stops]);
 
-  // Rows slide to their new places instead of jumping: remember where each was, and after the order changes
-  // start each from its old place and let it ease to the new one.
+  // Never leave a drag half-finished if the list goes away.
+  useEffect(() => () => cleanup.current?.(), []);
+
+  // Rows slide to their new places: remember each row's place on the PAGE, and after the order changes
+  // start each from its old place and ease to the new one.
   useLayoutEffect(() => {
+    const scrollY = window.scrollY;
     for (const s of items) {
       const el = rows.current.get(s.id);
       if (!el) continue;
-      const now = el.getBoundingClientRect().top;
-      const before = tops.current.get(s.id);
-      if (before !== undefined && Math.abs(before - now) > 1 && s.id !== drag?.id) {
+      const now = el.getBoundingClientRect().top + scrollY;
+      const before = pageTops.current.get(s.id);
+      if (before !== undefined && Math.abs(before - now) > 1 && s.id !== dragId) {
         el.style.transition = 'none';
         el.style.transform = `translateY(${before - now}px)`;
         void el.offsetHeight;
-        el.style.transition = 'transform 160ms ease';
+        el.style.transition = 'transform 150ms ease';
         el.style.transform = '';
       }
-      tops.current.set(s.id, now);
+      pageTops.current.set(s.id, now);
     }
   });
 
@@ -85,27 +85,46 @@ export function RoundOrderList({ roundId, stops }: { roundId: string; stops: Sto
   }
 
   function startDrag(e: React.PointerEvent, id: string) {
+    if (cleanup.current) return; // one drag at a time
     e.preventDefault();
     const row = rows.current.get(id);
-    if (!row) return;
-    const box = row.getBoundingClientRect();
+    const box = row?.getBoundingClientRect();
+    if (!row || !box) return;
     const before = live.current.map((s) => s.id).join(',');
-    const base = { id, left: box.left, width: box.width, height: box.height, grabX: e.clientX - box.left, grabY: e.clientY - box.top };
-    setDrag({ ...base, x: e.clientX, y: e.clientY, settleTop: null });
+    const grabX = e.clientX - box.left;
+    const grabY = e.clientY - box.top;
+    const height = box.height;
+    let pointerY = e.clientY;
+    let done = false;
+    setDragId(id);
     setStatus(null);
-    navigator.vibrate?.(10);
-    const prevSelect = document.body.style.userSelect;
-    document.body.style.userSelect = 'none';
 
-    const move = (ev: PointerEvent) => {
-      // Near the top or bottom of the screen, scroll so a long round can be dragged all the way.
-      if (ev.clientY < 90) window.scrollBy(0, -12);
-      else if (ev.clientY > window.innerHeight - 90) window.scrollBy(0, 12);
-      setDrag((d) => (d ? { ...d, x: ev.clientX, y: ev.clientY } : d));
+    const place = (y: number, scale: number) => {
+      const g = ghost.current;
+      if (!g) return;
+      if (!g.style.width) {
+        // First time: size it like the row it came from and show it, at full size, right under the thumb.
+        g.style.left = `${box.left}px`;
+        g.style.width = `${box.width}px`;
+        g.style.height = `${height}px`;
+        g.style.transformOrigin = `${grabX}px ${grabY}px`;
+        g.style.transform = 'scale(1)';
+        g.style.opacity = '1';
+      }
+      g.style.top = `${y - grabY}px`;
+      g.style.transform = `scale(${scale})`;
+    };
+    // Then it eases down to its smaller size.
+    requestAnimationFrame(() => {
+      place(pointerY, 1);
+      requestAnimationFrame(() => place(pointerY, SCALE));
+    });
+
+    const reorder = () => {
       const current = live.current;
       const others = current.filter((s) => s.id !== id);
-      // The gap is before the first other row whose middle is below the middle of the floating row.
-      const middle = ev.clientY - base.grabY + base.height / 2;
+      // The gap goes before the first other row whose middle is below the middle of the copy.
+      const middle = pointerY - grabY + height / 2;
       let slot = others.length;
       for (let i = 0; i < others.length; i++) {
         const b = rows.current.get(others[i].id)?.getBoundingClientRect();
@@ -114,38 +133,75 @@ export function RoundOrderList({ roundId, stops }: { roundId: string; stops: Sto
           break;
         }
       }
-      const me = current.find((s) => s.id === id)!;
+      const me = current.find((s) => s.id === id);
+      if (!me) return;
       const next = [...others.slice(0, slot), me, ...others.slice(slot)];
-      if (next.map((s) => s.id).join(',') !== current.map((s) => s.id).join(',')) {
-        setItems(next);
-        navigator.vibrate?.(5);
-      }
+      if (next.map((s) => s.id).join(',') !== current.map((s) => s.id).join(',')) setItems(next);
     };
-    const end = () => {
+
+    const move = (ev: PointerEvent) => {
+      pointerY = ev.clientY;
+      place(pointerY, SCALE);
+      // Near the top or bottom of the screen, scroll so a long round can be dragged all the way.
+      if (ev.clientY < 90) window.scrollBy(0, -10);
+      else if (ev.clientY > window.innerHeight - 90) window.scrollBy(0, 10);
+      reorder();
+    };
+    // The page must not scroll or pull-to-refresh under a drag in progress.
+    const stopScroll = (ev: TouchEvent) => ev.preventDefault();
+
+    const finish = (commit: boolean) => {
+      if (done) return;
+      done = true;
       window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', end);
-      window.removeEventListener('pointercancel', end);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('blur', cancel);
+      document.removeEventListener('visibilitychange', cancel);
+      window.removeEventListener('touchmove', stopScroll);
       document.body.style.userSelect = prevSelect;
-      // Glide the floating row into the gap it left, then drop it.
-      const slotTop = rows.current.get(id)?.getBoundingClientRect().top ?? null;
-      setDrag((d) => (d ? { ...d, settleTop: slotTop } : d));
-      navigator.vibrate?.(10);
-      window.setTimeout(() => setDrag(null), 170);
-      if (live.current.map((s) => s.id).join(',') !== before) void save(live.current);
+      document.body.style.overscrollBehavior = prevOverscroll;
+      // Glide the copy into the gap, then remove it. Whatever happens, it is gone shortly.
+      const target = rows.current.get(id)?.getBoundingClientRect();
+      const g = ghost.current;
+      if (g && target && commit) {
+        g.style.transition = `top ${SETTLE_MS}ms ease, transform ${SETTLE_MS}ms ease`;
+        g.style.top = `${target.top}px`;
+        g.style.transform = 'scale(1)';
+      }
+      window.setTimeout(
+        () => {
+          setDragId((d) => (d === id ? null : d));
+          cleanup.current = null;
+        },
+        commit ? SETTLE_MS + 20 : 0,
+      );
+      if (commit && live.current.map((s) => s.id).join(',') !== before) void save(live.current);
     };
+    const up = () => finish(true);
+    const cancel = () => finish(true);
+
+    const prevSelect = document.body.style.userSelect;
+    const prevOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.userSelect = 'none';
+    document.body.style.overscrollBehavior = 'none';
     window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', end);
-    window.addEventListener('pointercancel', end);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('blur', cancel);
+    document.addEventListener('visibilitychange', cancel);
+    window.addEventListener('touchmove', stopScroll, { passive: false });
+    cleanup.current = () => finish(false);
   }
 
-  const dragged = drag ? items.find((s) => s.id === drag.id) : undefined;
-  const draggedIndex = drag ? items.findIndex((s) => s.id === drag.id) : -1;
+  const dragged = dragId ? items.find((s) => s.id === dragId) : undefined;
+  const draggedIndex = dragId ? items.findIndex((s) => s.id === dragId) : -1;
 
   return (
     <div>
       <ol className="flex flex-col gap-2">
         {items.map((c, i) => {
-          const isDragged = drag?.id === c.id;
+          const isDragged = dragId === c.id;
           return (
             <li
               key={c.id}
@@ -153,54 +209,45 @@ export function RoundOrderList({ roundId, stops }: { roundId: string; stops: Sto
                 if (el) rows.current.set(c.id, el);
                 else rows.current.delete(c.id);
               }}
-              className={`flex items-center gap-2 rounded-xl p-2 ring-1 ${isDragged ? 'bg-brand/5 ring-2 ring-dashed ring-brand-deep/50' : 'bg-white shadow-sm ring-ink/10'}`}
+              className={`flex items-center gap-2 rounded-xl p-2 ring-1 ${isDragged ? 'bg-brand/5 opacity-40 ring-2 ring-dashed ring-brand-deep/60' : 'bg-white shadow-sm ring-ink/10'}`}
             >
-              <div className={`flex min-w-0 flex-1 items-center gap-2 ${isDragged ? 'invisible' : ''}`}>
+              <button
+                type="button"
+                aria-label={`Drag ${c.title} to a new place`}
+                onPointerDown={(e) => startDrag(e, c.id)}
+                className="flex h-12 w-10 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded-lg text-xl text-ink/60 active:bg-brand/10"
+              >
+                ☰
+              </button>
+              <span className="w-6 shrink-0 text-center font-black text-ink/60">{i + 1}</span>
+              <a href={`/admin/customers/${c.id}`} className="min-w-0 flex-1">
+                <span className="block truncate font-bold">{c.title}</span>
+                <span className="block truncate text-sm text-ink/70">{c.subtitle}</span>
+              </a>
+              {(['up', 'down'] as const).map((step) => (
                 <button
+                  key={step}
                   type="button"
-                  aria-label={`Drag ${c.title} to a new place`}
-                  onPointerDown={(e) => startDrag(e, c.id)}
-                  className="flex h-12 w-10 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded-lg text-xl text-ink/60 active:cursor-grabbing active:bg-brand/10"
+                  onClick={() => moveBy(c.id, step === 'up' ? -1 : 1)}
+                  disabled={step === 'up' ? i === 0 : i === items.length - 1}
+                  aria-label={`Move ${c.title} ${step}`}
+                  className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg text-lg font-black text-brand-deep ring-1 ring-brand-deep/40 disabled:opacity-30"
                 >
-                  ☰
+                  {step === 'up' ? '↑' : '↓'}
                 </button>
-                <span className="w-6 shrink-0 text-center font-black text-ink/60">{i + 1}</span>
-                <a href={`/admin/customers/${c.id}`} className="min-w-0 flex-1">
-                  <span className="block truncate font-bold">{c.title}</span>
-                  <span className="block truncate text-sm text-ink/70">{c.subtitle}</span>
-                </a>
-                {(['up', 'down'] as const).map((step) => (
-                  <button
-                    key={step}
-                    type="button"
-                    onClick={() => moveBy(c.id, step === 'up' ? -1 : 1)}
-                    disabled={step === 'up' ? i === 0 : i === items.length - 1}
-                    aria-label={`Move ${c.title} ${step}`}
-                    className="flex h-11 w-9 shrink-0 items-center justify-center rounded-lg text-lg font-black text-brand-deep ring-1 ring-brand-deep/40 disabled:opacity-30"
-                  >
-                    {step === 'up' ? '↑' : '↓'}
-                  </button>
-                ))}
-              </div>
+              ))}
             </li>
           );
         })}
       </ol>
 
-      {/* The copy under the finger: lifted, a little smaller, following the thumb, then gliding home on release. */}
-      {drag && dragged && (
+      {/* The copy under the thumb. Its position is written straight to its style while dragging. */}
+      {dragged && (
         <div
+          ref={ghost}
           aria-hidden
-          className="pointer-events-none fixed z-50 flex items-center gap-2 rounded-xl bg-white p-2 shadow-2xl ring-2 ring-brand-deep"
-          style={{
-            left: drag.left,
-            width: drag.width,
-            height: drag.height,
-            top: drag.settleTop ?? drag.y - drag.grabY,
-            transform: drag.settleTop === null ? `scale(${SCALE}) rotate(-0.6deg)` : 'scale(1)',
-            transformOrigin: `${drag.grabX}px ${drag.grabY}px`,
-            transition: drag.settleTop === null ? 'transform 120ms ease, box-shadow 120ms ease' : 'top 160ms ease, transform 160ms ease',
-          }}
+          className="pointer-events-none fixed z-50 flex items-center gap-2 rounded-xl bg-white p-2 opacity-0 shadow-2xl ring-2 ring-brand-deep"
+          style={{ left: 0, top: 0, transition: 'transform 110ms ease, opacity 80ms ease' }}
         >
           <span className="flex h-12 w-10 shrink-0 items-center justify-center text-xl text-brand-deep">☰</span>
           <span className="w-6 shrink-0 text-center font-black text-brand-deep">{draggedIndex + 1}</span>

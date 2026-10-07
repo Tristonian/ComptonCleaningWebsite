@@ -465,6 +465,53 @@ export async function createRound(args: { name: unknown; weekday?: unknown }, by
   }
 }
 
+/**
+ * Make a round on the fly from some customers (the ones who are due, say). The round is created, then the
+ * customers are added to it in the order given; if adding them fails the new round is removed again, so a
+ * failed attempt leaves nothing behind. Customers keep any rounds they are already in.
+ */
+export async function createRoundFrom(
+  args: { name: unknown; weekday?: unknown },
+  customerIds: unknown[],
+  by: string,
+  db: Db = getDb(),
+): Promise<Created & { added?: number }> {
+  const ids = [...new Set(customerIds.map(String))].filter((x) => /^\d+$/.test(x)).slice(0, 500);
+  if (ids.length === 0) return { ok: false, error: 'Tick at least one customer.' };
+  const made = await createRound(args, by, db);
+  if (!made.ok) return made;
+  try {
+    // Positions follow the order given (bulkSetup orders by name, so insert each in turn instead).
+    await db.transaction([
+      ...ids.map((id, i) => ({
+        text: 'INSERT INTO customer_rounds (customer_id, round_id, position) SELECT c.id, $2, $3 FROM customers c WHERE c.id = $1 ON CONFLICT DO NOTHING',
+        params: [id, made.id, i],
+      })),
+      audit(by, 'round_built', { id: made.id, stops: ids.length }),
+    ]);
+    return { ok: true, id: made.id, added: ids.length };
+  } catch (err) {
+    console.error('[customers] createRoundFrom failed:', err);
+    await db.query('DELETE FROM rounds WHERE id = $1', [made.id]).catch(() => undefined);
+    return { ok: false, error: 'Could not build that round. Nothing was changed.' };
+  }
+}
+
+/** Delete a round (and its place in the schedule). The customers stay; they just are no longer in it. */
+export async function deleteRound(id: unknown, by: string, db: Db = getDb()): Promise<Result> {
+  if (!/^\d+$/.test(String(id))) return { ok: false, error: 'Unknown round.' };
+  try {
+    const rows = await db.query('DELETE FROM rounds WHERE id = $1 RETURNING id', [id]);
+    if (rows.length === 0) return { ok: false, error: 'That round no longer exists.' };
+    const a = audit(by, 'round_deleted', { id: String(id) });
+    await db.query(a.text, a.params);
+    return { ok: true };
+  } catch (err) {
+    console.error('[customers] deleteRound failed:', err);
+    return { ok: false, error: 'Could not delete that round. Try again.' };
+  }
+}
+
 export async function listPaymentMethods(db: Db = getDb()): Promise<{ key: string; label: string }[]> {
   return db.query<{ key: string; label: string }>('SELECT key, label FROM payment_methods ORDER BY position, label');
 }
