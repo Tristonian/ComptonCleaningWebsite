@@ -9,7 +9,7 @@ Newest first. Led by what changed for Sam, then the numbers and what is still un
 - **Build a round on the fly** (Rounds screen, or from Home): everyone due this week (overdue first) is listed ticked; untick who you are not doing, name it, Build. It opens on its best-order preview. Customers keep any rounds they are in.
 - **Built rounds are temporary (same day, Tristan's request):** they expire 48 hours after they are built (migration 0014 `rounds.expires_at`) unless you press "Save as a round" (name + usual day). No delete button: expiry does the tidying. Marked ⏳ on the round tabs.
 - **Drag fix #2:** rows could disappear when dragged wildly. Row positions for the slide animation are now layout positions (not affected by a slide in progress), moves use the latest order even when several arrive before a redraw, the saved order is never reloaded under a drag, and any half-finished slide is cleared at the end. ⚠️ Not yet re-tried on a phone.
-- 290 tests pass (36 files). Staging Worker `4eb82e88`, Neon staging through 0014; production still Worker `c157c645`, Neon through 0011.
+- 290 tests pass (36 files), typecheck and build clean. Staging Worker `4eb82e88`, Neon staging through 0014; production still Worker `c157c645`, Neon through 0011.
 
 ## 2026-10-05 (session 7, continued): drag-to-order, pencil-mode call/away pair, calendar as a time grid, email to Sam
 

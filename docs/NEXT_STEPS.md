@@ -4,14 +4,14 @@ The in-chat todo list doesn't survive a new session, so the live backlog lives h
 world **as it is now**; it is rewritten, not appended, at each `/wrapup` (git history has the old ones).
 Read `CLAUDE.md`, then this, then `ROADMAP.md`. Start a fresh session with `/nextsteps`.
 
-_Last revised: **2026-10-04, end of session 7** (built overnight, unattended; staging only)._
+_Last revised: **2026-10-07, end of session 7** (built overnight and over the next days with Tristan; staging only)._
 
-## State, verified at the end of session 7
+## State, verified at the end of session 7 (2026-10-07)
 
 | Check | Result |
 |---|---|
 | `npm run typecheck` | clean |
-| `npm test` | **275 / 275** (35 files). The database tests boot an in-process Postgres each and take about a minute; hook timeout is 60 s. |
+| `npm test` | **290 / 290** (36 files). The database tests boot an in-process Postgres each and take about a minute; hook timeout is 60 s. |
 | `npx next build` | clean |
 | Git | `main` = `staging` = `origin` after the wrap-up push. A push deploys nothing: there is no deploy workflow. The repo is **public**. |
 | Staging | https://staging.comptoncleaning.co.uk, Worker `4eb82e88`, deployed this session. Neon `staging` migrated through **0014**; 16 demo customers + 3 "Demo" rounds. Wire-checked: `/` and `/cy` 200, the new admin routes 307 to login, `/api/admin/earnings/export` 401 when signed out, and the away message replaces the Call button when hours are set (probe hours removed again: `call_hours` is empty on staging). |
@@ -56,9 +56,13 @@ _Last revised: **2026-10-04, end of session 7** (built overnight, unattended; st
 
 **Sessions 1-3:** Cloudflare Workers (OpenNext), Neon + R2, Google OAuth + allow-list (ADR 0003), the pencil and `/cy` (ADR 0004), the one-page site, contact form, enquiry inbox, logo upload, hero, page blocks (ADR 0006), own services, hide/show sections, favicon, go-live prep.
 
+## Decisions made by Tristan this session (do not undo without asking)
+
+- Calendar must look like Rachel's (time grid), not a list. Best order uses drive TIME (fast roads count). Drag-to-order must feel like lifting a card under the thumb and must not vibrate. Rounds built from who's due are TEMPORARY (48 hours) and can be saved as a round; there is no delete-round button. Sam's call hours come from the in-app calendar, not Google Calendar.
+
 ## Next, in order
 
-1. **Production check with Tristan, then take session 7 live:** sign in to `/admin` on production, verify each secret is non-empty through the live Worker, submit a test enquiry (GO-LIVE step 5). Then, **only when Tristan says so**, he runs migrate (0012, 0013) then deploy. Have Sam set his call hours in Settings straight after.
+1. **Production check with Tristan, then take session 7 live:** sign in to `/admin` on production, verify each secret is non-empty through the live Worker, submit a test enquiry (GO-LIVE step 5). Then, **only when Tristan says so**, he runs migrate (0012, 0013, 0014) then deploy. Have Sam set his call hours in Settings straight after.
 2. **Real-phone pass on staging** of everything in "Untested" above, Best order first (confirm it says real drive times, not "estimated"; try a round of 5-6 demo customers and a round with someone with no pin).
 3. Fix what the phone pass finds. Likely candidates: a road-following route line on `/admin/customers/map` for the planned order; drag scrolling on small phones.
 4. SMSWorks behind the same template keys (needs an account); rich/HTML emails only if Sam wants them (ADR 0010).
@@ -95,6 +99,8 @@ _Last revised: **2026-10-04, end of session 7** (built overnight, unattended; st
 - **The public Call button must fail open:** `isTakingCalls` returns true if hours are unset or unreadable. Do not turn a database error into "no calls".
 - **Money received is counted on `coalesce(paid_on, done_on)`:** a new code path that sets `paid = true` must set `paid_on` too (a CHECK was deliberately not added so the demo seed and old rows still work). Reports are by received date, not visit date.
 - **Only a clean date range reaches the reports:** go through `cleanRange` (valid, ordered, at most 800 days). CSV cells go through `csvCell` (spreadsheet formula injection).
+- **Drag lists on phones:** do not vibrate per step; move the floating copy by writing its style (not React state per move); measure slide animations with `offsetTop`, never `getBoundingClientRect` (a slide in progress or a scroll corrupts it); update the live-order ref immediately when reordering because several moves arrive per render; never reload the server order mid-drag; always clean up on cancel/blur/unmount.
+- **Temporary rounds** carry `expires_at`; `listRounds` hides expired ones and only `withTemporary: true` shows live ones. New code that lists rounds for a picker (customer form, calendar, bulk setup) must keep the default (standing rounds only).
 - **Mapbox from the server needs a Referer:** the public token is URL-restricted; no Referer = 403. `travelMatrix` falls back to estimates and says so; keep the "estimated" label, never show a guess as a measured time.
 - **The Matrix API takes 25 coordinates:** chunks of 12 per pair; 36 stops max per plan. Raise `MAX_STOPS` only with the 60-requests-a-minute limit in mind.
 - **Closed tours along one road tie:** out-and-back orders can cost the same, so tests of ordering use `returnHome: false` or points that are not collinear.
@@ -104,7 +110,7 @@ _Last revised: **2026-10-04, end of session 7** (built overnight, unattended; st
 
 ## Do first next session
 
-1. `/nextsteps` re-verifies the state. Then item 1 above with Tristan (production sign-in, secrets, test enquiry); production needs 0012-0013 before the session 7 deploy.
+1. `/nextsteps` re-verifies the state. Then item 1 above with Tristan (production sign-in, secrets, test enquiry); production needs 0012-0014 before the session 7 deploy.
 2. Have Tristan open staging `/admin` on a phone and go through "Untested", Best order and the Calendar first.
 3. Then fix what he finds.
 
@@ -113,11 +119,11 @@ _Last revised: **2026-10-04, end of session 7** (built overnight, unattended; st
 ```text
 Work in C:\Users\Trist\Documents\GitHub\ComptonCleaningWebsite (Next.js 15 + Tailwind on Cloudflare Workers via OpenNext, Neon Postgres, R2; Sam's window-cleaning site + work tracker). Start every message with "Tristan, ". Run /nextsteps (or read CLAUDE.md, docs/NEXT_STEPS.md, docs/ROADMAP.md, ADRs 0008, 0009, 0010, 0011 and 0012 in that order).
 
-STATE (2026-10-04, end of session 7, verify first): typecheck clean; 275/275 tests (slow, ~1-2 min); build clean. main = staging = origin. Staging: Worker 4eb82e88, Neon staging through 0013 (calendar, call hours, Earnings, route planner all live there), 16 "Demo:" customers. Production: Worker c157c645 = session 6 code; Neon production through 0011 ONLY (0012-0014 not applied); nobody has signed in to production /admin; 7 Worker secrets present, not verified non-empty. Repo is public. Tristan has seen on a phone only: weather tile, Take photo, Coming tomorrow switching off. Everything from sessions 4-7 is otherwise unchecked on a device.
+STATE (2026-10-07, end of session 7, verify first): typecheck clean; 290/290 tests (slow, ~1-2 min); build clean. main = staging = origin. Staging: Worker 4eb82e88, Neon staging through 0014 (calendar, call hours, Earnings, route planner, temporary rounds all live there), 16 "Demo:" customers. Production: Worker c157c645 = session 6 code; Neon production through 0011 ONLY (0012-0014 not applied); nobody has signed in to production /admin; 7 Worker secrets present, not verified non-empty. Repo is public. Tristan has used on a phone: weather tile, Take photo, Coming tomorrow switching off, and the drag-to-order list (first build buzzed and hid rows; the rewrite "feels better" but rows could still disappear when dragged wildly, fixed again, not re-tried). Everything else from sessions 4-7 is unchecked on a device. Sam has been emailed twice (from hello@, cc Tristan) summarising the new features as test-site only.
 
 TASKS, in order:
 1. With Tristan: sign in to production /admin, verify each production secret is non-empty through the live Worker, submit a test enquiry, then docs/GO-LIVE.md step 5. Then, ONLY if Tristan says so, hand him the PowerShell commands to take session 7 live ($env:CLOUDFLARE_ACCOUNT_ID = "f63f844d70738925fc7fb251893122cc"; npm run db:migrate -- --branch production (applies 0012, 0013 and 0014); then npm run deploy). The assistant cannot run production migrate/deploy (permission check blocks it). Afterwards Sam sets his call hours in Settings.
-2. Real-phone pass on staging with Tristan: Best order on a round (must say real drive times, not "estimated"), Calendar week/month and add forms, Settings (call hours, ways of paying), Rounds arrows, Earnings and CSV, "Set up several", last-cleaned, Add photos after DONE, the six-tab bar. Fix what he finds.
+2. Real-phone pass on staging with Tristan: wild dragging on Rounds (do any rows still vanish?), Best order from Home and from Where I am (must say real drive times, not "estimated"), Build from who's due then Save as a round, the Calendar day/week/month and add forms, Settings (call hours, ways of paying), Earnings and CSV, "Set up several", last-cleaned, Add photos after DONE, the six-tab bar. Fix what he finds.
 3. Likely follow-ups: a route line on the admin map, optional MAPBOX_SERVER_TOKEN secret (unrestricted Matrix token; verify non-empty).
 4. Decisions Tristan owes: should visit photos stay on the public /img/<hash> route (ADR 0009)? Weather and call-hour defaults are guesses.
 5. Later: SMSWorks behind the template keys, invoices, cancellations and estimated earnings, timer, achievements, SEO.
