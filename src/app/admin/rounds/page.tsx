@@ -1,9 +1,9 @@
 import { AdminBar } from '@/components/AdminBar';
 import { requireAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { listCustomers, listRoundOrder, listRounds, todayLondon } from '@/lib/customers';
+import { listCustomers, listRoundOrder, listRounds, purgeExpiredRounds, todayLondon } from '@/lib/customers';
 import { addRoundAction } from '../customers/actions';
-import { applyRoundPlanAction, deleteRoundAction, saveRoundAction } from '../settings/actions';
+import { applyRoundPlanAction, saveRoundAction, saveTemporaryRoundAction } from '../settings/actions';
 import { BuildRound, type DueCustomer } from '@/components/admin/BuildRound';
 import { endOfWeek } from '@/lib/jobs';
 import { RoundOrderList } from '@/components/admin/RoundOrderList';
@@ -19,11 +19,15 @@ export const metadata = { title: 'Rounds', robots: { index: false, follow: false
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const input = 'rounded-xl border border-ink/20 bg-white p-3 text-base';
 
+const expiryLabel = (iso: string) =>
+  new Date(iso).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+
 export default async function RoundsPage({ searchParams }: { searchParams: Promise<{ round?: string; plan?: string; home?: string; build?: string; ok?: string; error?: string }> }) {
   const admin = await requireAdmin();
   const sp = await searchParams;
   const db = getDb();
-  const rounds = await listRounds(db);
+  await purgeExpiredRounds(db);
+  const rounds = await listRounds(db, { withTemporary: true });
   const round = rounds.find((r) => r.id === sp.round) ?? rounds[0];
   const [everyone, order] = round ? await Promise.all([listCustomers({ roundId: round.id }, db), listRoundOrder(round.id, db)]) : [[], []];
   const byId = new Map(everyone.map((c) => [c.id, c]));
@@ -63,6 +67,7 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
                 aria-current={round?.id === r.id ? 'page' : undefined}
                 className={`whitespace-nowrap rounded-full px-3 py-2 text-sm font-bold ${round?.id === r.id ? 'bg-amber-200 text-amber-950' : 'text-ink/80 ring-1 ring-ink/30'}`}
               >
+                {r.expiresAt ? '⏳ ' : ''}
                 {r.name} ({r.customers})
               </a>
             ))}
@@ -71,12 +76,41 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
 
         <details className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-ink/10" open={sp.build === '1' || rounds.length === 0}>
           <summary className="cursor-pointer text-lg font-black text-brand-deep">➕ Build a round from who’s due ({dueNow.length})</summary>
-          <p className="mb-3 mt-1 text-sm text-ink/70">Everyone due this week, overdue first. Untick anyone you are not doing, name the round and build it; it opens on its best order.</p>
+          <p className="mb-3 mt-1 text-sm text-ink/70">Everyone due this week, overdue first. Untick anyone you are not doing and build it. It is a temporary round that disappears after 48 hours; save it if you want to keep it. It opens on its best order.</p>
           <BuildRound customers={dueNow} defaultName={`Due ${short(today)}`} />
         </details>
 
         {round ? (
           <>
+            {round.expiresAt && (
+              <form action={saveTemporaryRoundAction} className="flex flex-col gap-2 rounded-xl bg-amber-50 p-4 ring-1 ring-amber-300">
+                <input type="hidden" name="id" value={round.id} />
+                <p className="font-black text-amber-950">⏳ Temporary round</p>
+                <p className="text-sm text-amber-950/85">
+                  Built from who was due. It disappears on <strong>{expiryLabel(round.expiresAt)}</strong> unless you save it. Its customers are not affected either way.
+                </p>
+                <div className="flex flex-wrap items-end gap-2">
+                  <label className="min-w-0 flex-1 text-sm font-semibold text-ink/80">
+                    Name
+                    <input name="name" required defaultValue={round.name} className={`${input} mt-1 w-full font-normal`} />
+                  </label>
+                  <label className="text-sm font-semibold text-ink/80">
+                    Usual day
+                    <select name="weekday" defaultValue="" className={`${input} mt-1 block font-normal`}>
+                      <option value="">Any</option>
+                      {DAYS.map((d, i) => (
+                        <option key={d} value={i + 1}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button type="submit" className="min-h-12 rounded-xl bg-brand-deep px-4 font-black text-white">
+                    Save as a round
+                  </button>
+                </div>
+              </form>
+            )}
             <form action={saveRoundAction} className="flex flex-wrap items-end gap-2 rounded-xl bg-white p-4 shadow-sm ring-1 ring-ink/10">
               <input type="hidden" name="id" value={round.id} />
               <label className="min-w-0 flex-1 text-sm font-semibold text-ink/80">
@@ -201,22 +235,6 @@ export default async function RoundsPage({ searchParams }: { searchParams: Promi
           </>
         ) : (
           <p className="rounded-xl bg-white p-6 text-center text-ink/70 ring-1 ring-ink/10">No rounds yet. Build one from who’s due above, or add one below.</p>
-        )}
-
-        {round && (
-          <details className="rounded-xl bg-red-50 p-3 ring-1 ring-red-200">
-            <summary className="cursor-pointer text-sm font-bold text-red-900">Delete the round “{round.name}”</summary>
-            <p className="mt-2 text-sm text-red-900/80">Removes the round and its place in the calendar. The customers in it are not touched.</p>
-            <form action={deleteRoundAction} className="mt-2 flex items-center gap-3">
-              <input type="hidden" name="id" value={round.id} />
-              <label className="flex items-center gap-2 text-sm font-semibold text-red-900">
-                <input type="checkbox" name="confirm" className="h-5 w-5" /> Yes, delete it
-              </label>
-              <button type="submit" className="ml-auto rounded-xl bg-red-700 px-4 py-2 font-bold text-white">
-                Delete
-              </button>
-            </form>
-          </details>
         )}
 
         <details className="rounded-xl bg-white p-3 ring-1 ring-ink/10">

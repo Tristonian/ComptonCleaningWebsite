@@ -75,7 +75,7 @@ export default async function WorkPage({
   const weekEnd = endOfWeek(today);
   const [everyone, rounds, methods, scheduledToday] = await Promise.all([
     listCustomers({}, db),
-    listRounds(db),
+    listRounds(db, { withTemporary: true }),
     listPaymentMethods(db),
     listEntries(today, today, db).catch(() => []),
   ]);

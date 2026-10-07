@@ -6,7 +6,7 @@ import { PLAN_START_COOKIE, PLAN_START_MAX_AGE_SECONDS, serialisePlanStart } fro
 import { isPlausibleUkPoint } from '@/lib/geo';
 import { getAdmin } from '@/lib/auth/session';
 import { getDb } from '@/lib/db';
-import { addPaymentMethod, createRoundFrom, deleteRound, removePaymentMethod, renamePaymentMethod, setRoundOrder, updateRound } from '@/lib/customers';
+import { addPaymentMethod, createRoundFrom, makeRoundPermanent, removePaymentMethod, renamePaymentMethod, setRoundOrder, updateRound } from '@/lib/customers';
 import { setCallHours } from '@/lib/schedule';
 
 /**
@@ -98,17 +98,18 @@ export async function clearPlanStartAction(): Promise<{ ok: boolean }> {
   return { ok: true };
 }
 
-/** Build a round from the ticked customers, then open it on its best-order preview. */
+/** Build a temporary round (48 hours) from the ticked customers, then open it on its best-order preview. */
 export async function buildRoundAction(form: FormData): Promise<void> {
   const a = await admin();
-  const r = await createRoundFrom({ name: text(form, 'name'), weekday: text(form, 'weekday') }, form.getAll('ids').map(String), a.email, getDb());
+  const r = await createRoundFrom({ name: text(form, 'name') }, form.getAll('ids').map(String), a.email, getDb(), { temporary: true });
   if (!r.ok) redirect(flash('/admin/rounds', 'error', r.error));
-  redirect(flash(`/admin/rounds?round=${r.id}&plan=all`, 'ok', `Round built with ${r.added} stop${r.added === 1 ? '' : 's'}. Here is its best order.`));
+  redirect(flash(`/admin/rounds?round=${r.id}&plan=all`, 'ok', `Temporary round built with ${r.added} stop${r.added === 1 ? '' : 's'}. It disappears in 48 hours unless you save it. Here is its best order.`));
 }
 
-export async function deleteRoundAction(form: FormData): Promise<void> {
+/** Keep a temporary round: name it, give it a day, and it becomes a standing round. */
+export async function saveTemporaryRoundAction(form: FormData): Promise<void> {
   const a = await admin();
-  if (form.get('confirm') !== 'on') redirect(flash(`/admin/rounds?round=${/^\d+$/.test(text(form, 'id')) ? text(form, 'id') : ''}`, 'error', 'Tick the box to confirm the delete.'));
-  const r = await deleteRound(text(form, 'id'), a.email, getDb());
-  redirect(flash('/admin/rounds', r.ok ? 'ok' : 'error', r.ok ? 'Round deleted. Its customers are untouched.' : r.error));
+  const id = text(form, 'id');
+  const r = await makeRoundPermanent(id, { name: text(form, 'name'), weekday: text(form, 'weekday') }, a.email, getDb());
+  redirect(flash(`/admin/rounds?round=${/^\d+$/.test(id) ? id : ''}`, r.ok ? 'ok' : 'error', r.ok ? 'Saved as a round.' : r.error));
 }

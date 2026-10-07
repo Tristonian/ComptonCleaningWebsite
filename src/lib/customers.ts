@@ -434,14 +434,50 @@ export async function importCustomers(
 
 // ---- rounds ----
 
-export type RoundRow = { id: string; name: string; weekday: number | null; customers: number };
+export type RoundRow = { id: string; name: string; weekday: number | null; customers: number; expiresAt: string | null };
 
-export async function listRounds(db: Db = getDb()): Promise<RoundRow[]> {
-  const rows = await db.query<{ id: string; name: string; weekday: number | null; customers: number }>(
-    `SELECT r.id::text AS id, r.name, r.weekday, (SELECT count(*)::int FROM customer_rounds c WHERE c.round_id = r.id) AS customers
-       FROM rounds r ORDER BY r.position, r.name`,
+/** How long a round built on the fly lasts before it is removed unless it is saved. */
+export const TEMPORARY_ROUND_HOURS = 48;
+
+/**
+ * Rounds in order. By default only standing rounds; `withTemporary` also includes the one-off rounds that
+ * have not expired yet (the screens that work a round: Rounds, Work, Home, the customer list and map).
+ */
+export async function listRounds(db: Db = getDb(), opts: { withTemporary?: boolean } = {}): Promise<RoundRow[]> {
+  const rows = await db.query<{ id: string; name: string; weekday: number | null; customers: number; expires_at: string | null }>(
+    `SELECT r.id::text AS id, r.name, r.weekday, (SELECT count(*) FROM customer_rounds c WHERE c.round_id = r.id)::int AS customers,
+            to_char(r.expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS expires_at
+       FROM rounds r
+      WHERE ${opts.withTemporary ? '(r.expires_at IS NULL OR r.expires_at > now())' : 'r.expires_at IS NULL'}
+      ORDER BY r.expires_at IS NOT NULL, r.position, r.name`,
   );
-  return rows.map((r) => ({ id: String(r.id), name: r.name, weekday: r.weekday, customers: Number(r.customers) }));
+  return rows.map((r) => ({ id: String(r.id), name: r.name, weekday: r.weekday, customers: Number(r.customers), expiresAt: r.expires_at }));
+}
+
+/** Remove temporary rounds whose 48 hours are up (their customers and visits are untouched). */
+export async function purgeExpiredRounds(db: Db = getDb()): Promise<number> {
+  try {
+    return (await db.query('DELETE FROM rounds WHERE expires_at IS NOT NULL AND expires_at <= now() RETURNING id')).length;
+  } catch (err) {
+    console.error('[customers] purgeExpiredRounds failed:', err);
+    return 0;
+  }
+}
+
+/** Keep a temporary round for good: give it its final name and day, and clear the expiry. */
+export async function makeRoundPermanent(id: unknown, args: { name: unknown; weekday?: unknown }, by: string, db: Db = getDb()): Promise<Result> {
+  const r = await updateRound(id, args, by, db);
+  if (!r.ok) return r;
+  try {
+    const rows = await db.query('UPDATE rounds SET expires_at = NULL WHERE id = $1 RETURNING id', [id]);
+    if (rows.length === 0) return { ok: false, error: 'That round no longer exists.' };
+    const a = audit(by, 'round_saved', { id: String(id) });
+    await db.query(a.text, a.params);
+    return { ok: true };
+  } catch (err) {
+    console.error('[customers] makeRoundPermanent failed:', err);
+    return { ok: false, error: 'Could not save that round. Try again.' };
+  }
 }
 
 export async function createRound(args: { name: unknown; weekday?: unknown }, by: string, db: Db = getDb()): Promise<Created> {
@@ -466,49 +502,45 @@ export async function createRound(args: { name: unknown; weekday?: unknown }, by
 }
 
 /**
- * Make a round on the fly from some customers (the ones who are due, say). The round is created, then the
- * customers are added to it in the order given; if adding them fails the new round is removed again, so a
- * failed attempt leaves nothing behind. Customers keep any rounds they are already in.
+ * Make a round on the fly from some customers (the ones who are due, say). With `temporary` it expires 48
+ * hours later unless saved (makeRoundPermanent), and a taken name gets "(2)", "(3)"... so building twice in a
+ * day just works. The round is created, then the customers are added in the order given; if adding them
+ * fails the new round is removed again, so a failed attempt leaves nothing behind. Customers keep any
+ * rounds they are already in.
  */
 export async function createRoundFrom(
   args: { name: unknown; weekday?: unknown },
   customerIds: unknown[],
   by: string,
   db: Db = getDb(),
-): Promise<Created & { added?: number }> {
+  opts: { temporary?: boolean } = {},
+): Promise<Created & { added?: number; name?: string }> {
   const ids = [...new Set(customerIds.map(String))].filter((x) => /^\d+$/.test(x)).slice(0, 500);
   if (ids.length === 0) return { ok: false, error: 'Tick at least one customer.' };
-  const made = await createRound(args, by, db);
+  const base = str(args.name, 60);
+  let made: Created = { ok: false, error: 'A round needs a name.' };
+  let name = base;
+  for (let n = 1; n <= 20; n++) {
+    name = n === 1 ? base : `${base} (${n})`.slice(0, 60);
+    made = await createRound({ name, weekday: args.weekday }, by, db);
+    if (made.ok || !opts.temporary || !made.error.includes('already a round')) break;
+  }
   if (!made.ok) return made;
   try {
     // Positions follow the order given (bulkSetup orders by name, so insert each in turn instead).
     await db.transaction([
       ...ids.map((id, i) => ({
         text: 'INSERT INTO customer_rounds (customer_id, round_id, position) SELECT c.id, $2, $3 FROM customers c WHERE c.id = $1 ON CONFLICT DO NOTHING',
-        params: [id, made.id, i],
+        params: [id, made.ok ? made.id : '', i],
       })),
-      audit(by, 'round_built', { id: made.id, stops: ids.length }),
+      ...(opts.temporary ? [{ text: `UPDATE rounds SET expires_at = now() + interval '${TEMPORARY_ROUND_HOURS} hours' WHERE id = $1`, params: [made.ok ? made.id : ''] }] : []),
+      audit(by, 'round_built', { id: made.ok ? made.id : '', stops: ids.length, temporary: Boolean(opts.temporary) }),
     ]);
-    return { ok: true, id: made.id, added: ids.length };
+    return { ok: true, id: made.id, added: ids.length, name };
   } catch (err) {
     console.error('[customers] createRoundFrom failed:', err);
     await db.query('DELETE FROM rounds WHERE id = $1', [made.id]).catch(() => undefined);
     return { ok: false, error: 'Could not build that round. Nothing was changed.' };
-  }
-}
-
-/** Delete a round (and its place in the schedule). The customers stay; they just are no longer in it. */
-export async function deleteRound(id: unknown, by: string, db: Db = getDb()): Promise<Result> {
-  if (!/^\d+$/.test(String(id))) return { ok: false, error: 'Unknown round.' };
-  try {
-    const rows = await db.query('DELETE FROM rounds WHERE id = $1 RETURNING id', [id]);
-    if (rows.length === 0) return { ok: false, error: 'That round no longer exists.' };
-    const a = audit(by, 'round_deleted', { id: String(id) });
-    await db.query(a.text, a.params);
-    return { ok: true };
-  } catch (err) {
-    console.error('[customers] deleteRound failed:', err);
-    return { ok: false, error: 'Could not delete that round. Try again.' };
   }
 }
 

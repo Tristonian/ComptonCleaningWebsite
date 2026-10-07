@@ -5,8 +5,6 @@ import { buildRoundAction } from '@/app/admin/settings/actions';
 
 export type DueCustomer = { id: string; name: string; address: string; due: string; overdue: boolean; rounds: string[]; hasPin: boolean };
 
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
 /**
  * Build a round on the fly from the customers who are due: everyone starts ticked, untick who you are not
  * doing, name it, and Build. The new round opens straight on its best-order preview. The tick boxes are
@@ -59,27 +57,14 @@ export function BuildRound({ customers, defaultName }: { customers: DueCustomer[
         ))}
       </ul>
 
-      <div className="grid grid-cols-[1fr_auto] gap-2">
-        <label className="text-sm font-semibold text-ink/80">
-          Name for the round
-          <input name="name" required defaultValue={defaultName} maxLength={60} className="mt-1 w-full rounded-xl border border-ink/20 bg-white p-3 text-base font-normal" />
-        </label>
-        <label className="text-sm font-semibold text-ink/80">
-          Day
-          <select name="weekday" defaultValue="" className="mt-1 block rounded-xl border border-ink/20 bg-white p-3 text-base font-normal">
-            <option value="">Any</option>
-            {DAYS.map((d, i) => (
-              <option key={d} value={i + 1}>
-                {d}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <label className="text-sm font-semibold text-ink/80">
+        Name for the round
+        <input name="name" required defaultValue={defaultName} maxLength={60} className="mt-1 w-full rounded-xl border border-ink/20 bg-white p-3 text-base font-normal" />
+      </label>
       <button type="submit" disabled={ticked.size === 0} className="min-h-12 rounded-xl bg-brand-deep px-4 text-lg font-black text-white disabled:opacity-40">
-        Build the round and find its best order
+        Build a temporary round and find its best order
       </button>
-      <p className="text-xs text-ink/70">Customers stay in any rounds they are already in. You can delete a one-off round afterwards from its page.</p>
+      <p className="text-xs text-ink/70">Customers stay in any rounds they are already in. The temporary round disappears after 48 hours unless you save it from its page.</p>
     </form>
   );
 }

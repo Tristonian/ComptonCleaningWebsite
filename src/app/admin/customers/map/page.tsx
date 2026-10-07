@@ -19,7 +19,7 @@ export default async function CustomerMapPage({ searchParams }: { searchParams: 
   const db = getDb();
   const today = todayLondon();
   const weekEnd = endOfWeek(today);
-  const [rows, rounds] = await Promise.all([listCustomers({ roundId: round, today }, db), listRounds(db)]);
+  const [rows, rounds] = await Promise.all([listCustomers({ roundId: round, today }, db), listRounds(db, { withTemporary: true })]);
   const token = getEnv('MAPBOX_TOKEN');
 
   const located = rows.filter((c): c is typeof c & { lat: number; lng: number } => c.lat !== null && c.lng !== null);

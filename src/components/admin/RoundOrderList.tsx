@@ -31,27 +31,31 @@ export function RoundOrderList({ roundId, stops }: { roundId: string; stops: Sto
   const [dragId, setDragId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const rows = useRef(new Map<string, HTMLLIElement>());
-  const pageTops = useRef(new Map<string, number>());
+  const layoutTops = useRef(new Map<string, number>());
+  const dragging = useRef(false);
   const ghost = useRef<HTMLDivElement>(null);
   const live = useRef(items);
   live.current = items;
   const cleanup = useRef<(() => void) | null>(null);
 
-  // A fresh order from the server (after a save or a planner run) replaces what is shown.
-  useEffect(() => setItems(stops), [stops]);
+  // A fresh order from the server (after a save or a planner run) replaces what is shown, but never
+  // underneath a drag in progress: that would yank rows out from under the thumb.
+  useEffect(() => {
+    if (!dragging.current) setItems(stops);
+  }, [stops]);
 
   // Never leave a drag half-finished if the list goes away.
   useEffect(() => () => cleanup.current?.(), []);
 
-  // Rows slide to their new places: remember each row's place on the PAGE, and after the order changes
-  // start each from its old place and ease to the new one.
+  // Rows slide to their new places. Each row's place is its LAYOUT position (offsetTop), which neither
+  // scrolling nor a slide still in progress can change, so a quick second move starts from the truth and a
+  // row can never be thrown off-screen by a bad measurement.
   useLayoutEffect(() => {
-    const scrollY = window.scrollY;
     for (const s of items) {
       const el = rows.current.get(s.id);
       if (!el) continue;
-      const now = el.getBoundingClientRect().top + scrollY;
-      const before = pageTops.current.get(s.id);
+      const now = el.offsetTop;
+      const before = layoutTops.current.get(s.id);
       if (before !== undefined && Math.abs(before - now) > 1 && s.id !== dragId) {
         el.style.transition = 'none';
         el.style.transform = `translateY(${before - now}px)`;
@@ -59,7 +63,7 @@ export function RoundOrderList({ roundId, stops }: { roundId: string; stops: Sto
         el.style.transition = 'transform 150ms ease';
         el.style.transform = '';
       }
-      pageTops.current.set(s.id, now);
+      layoutTops.current.set(s.id, now);
     }
   });
 
@@ -96,6 +100,7 @@ export function RoundOrderList({ roundId, stops }: { roundId: string; stops: Sto
     const height = box.height;
     let pointerY = e.clientY;
     let done = false;
+    dragging.current = true;
     setDragId(id);
     setStatus(null);
 
@@ -136,7 +141,12 @@ export function RoundOrderList({ roundId, stops }: { roundId: string; stops: Sto
       const me = current.find((s) => s.id === id);
       if (!me) return;
       const next = [...others.slice(0, slot), me, ...others.slice(slot)];
-      if (next.map((s) => s.id).join(',') !== current.map((s) => s.id).join(',')) setItems(next);
+      if (next.map((s) => s.id).join(',') !== current.map((s) => s.id).join(',')) {
+        // Update the ref at once as well: several moves can arrive before React re-renders, and each must
+        // start from the latest order, not the one from the last render.
+        live.current = next;
+        setItems(next);
+      }
     };
 
     const move = (ev: PointerEvent) => {
@@ -171,8 +181,14 @@ export function RoundOrderList({ roundId, stops }: { roundId: string; stops: Sto
       }
       window.setTimeout(
         () => {
+          dragging.current = false;
           setDragId((d) => (d === id ? null : d));
           cleanup.current = null;
+          // Clear any slide left half-done so no row is stuck displaced.
+          for (const el of rows.current.values()) {
+            el.style.transition = '';
+            el.style.transform = '';
+          }
         },
         commit ? SETTLE_MS + 20 : 0,
       );

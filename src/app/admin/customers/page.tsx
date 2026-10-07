@@ -90,7 +90,7 @@ export default async function CustomersPage({
   const [rows, everyone, rounds, comingTomorrowTemplate, methods] = await Promise.all([
     listCustomers({ filter, q: sp.q, roundId: sp.round, today }, db),
     listCustomers({}, db),
-    listRounds(db),
+    listRounds(db, { withTemporary: true }),
     getTemplate(COMING_TOMORROW, db),
     listPaymentMethods(db),
   ]);

@@ -21,7 +21,7 @@ export default async function AdminHome() {
 
   const forecast = await getForecast(BASE.lat, BASE.lng);
   // A hiccup here only means the round shortcuts are left out.
-  const rounds = await listRounds(getDb()).catch(() => []);
+  const rounds = await listRounds(getDb(), { withTemporary: true }).catch(() => []);
 
   return (
     <>

@@ -6,7 +6,10 @@ Newest first. Led by what changed for Sam, then the numbers and what is still un
 
 - **Drag-to-order rebuilt** after it buzzed the thumb on every step and could hide the row. No vibration at all; the floating copy is moved directly instead of re-rendering on every touch move; slide-aside positions are measured from the page top so scrolling while dragging cannot make every row "move"; the original row is only faded, never hidden; any way the drag ends (lift, cancel, tab hidden, leaving the page) removes the copy and releases the scroll lock; the page cannot scroll or pull-to-refresh under a drag. ⚠️ Not yet felt on a phone.
 - **Admin Home** now opens with a bold "Rounds and best order" card: 🧭 Best order, ➕ Build from who's due, and a chip per round that opens straight on its best order. The round tabs keep the plan mode.
-- **Build a round on the fly** (Rounds screen, or from Home): everyone due this week (overdue first) is listed ticked; untick who you are not doing, name it, Build. It opens on its best-order preview. Customers keep any rounds they are in. A round can be deleted from its page (customers untouched). `createRoundFrom` and `deleteRound`; 3 new tests (287 total). Staging Worker `1f636769`.
+- **Build a round on the fly** (Rounds screen, or from Home): everyone due this week (overdue first) is listed ticked; untick who you are not doing, name it, Build. It opens on its best-order preview. Customers keep any rounds they are in.
+- **Built rounds are temporary (same day, Tristan's request):** they expire 48 hours after they are built (migration 0014 `rounds.expires_at`) unless you press "Save as a round" (name + usual day). No delete button: expiry does the tidying. Marked ⏳ on the round tabs.
+- **Drag fix #2:** rows could disappear when dragged wildly. Row positions for the slide animation are now layout positions (not affected by a slide in progress), moves use the latest order even when several arrive before a redraw, the saved order is never reloaded under a drag, and any half-finished slide is cleared at the end. ⚠️ Not yet re-tried on a phone.
+- 290 tests pass (36 files). Staging Worker `4eb82e88`, Neon staging through 0014; production still Worker `c157c645`, Neon through 0011.
 
 ## 2026-10-05 (session 7, continued): drag-to-order, pencil-mode call/away pair, calendar as a time grid, email to Sam
 

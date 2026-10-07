@@ -7,7 +7,9 @@ import {
   createCustomer,
   createRound,
   createRoundFrom,
-  deleteRound,
+  listRounds,
+  makeRoundPermanent,
+  purgeExpiredRounds,
   getCustomer,
   listPaymentMethods,
   listRoundOrder,
@@ -178,13 +180,47 @@ describe('building a round on the fly', () => {
     expect((await db.query<{ n: number }>('SELECT count(*)::int AS n FROM rounds'))[0].n).toBe(1);
   });
 
-  it('deletes a round but not its customers', async () => {
+  it('builds a temporary round: hidden from the usual lists, shown where rounds are worked, expiring in 48 hours', async () => {
     const a = await person(db, 'Ann');
-    const made = await createRoundFrom({ name: 'Temp' }, [a], 's', db);
+    const made = await createRoundFrom({ name: 'Due Wed' }, [a], 's', db, { temporary: true });
     if (!made.ok) throw new Error('made');
-    expect((await deleteRound(made.id, 's', db)).ok).toBe(true);
-    expect((await getCustomer(a, db))?.rounds).toEqual([]);
-    expect((await deleteRound(made.id, 's', db)).ok).toBe(false);
-    expect((await deleteRound('x', 's', db)).ok).toBe(false);
+    expect((await listRounds(db)).map((r) => r.name)).toEqual([]);
+    const all = await listRounds(db, { withTemporary: true });
+    expect(all.map((r) => r.name)).toEqual(['Due Wed']);
+    const hours = (new Date(all[0].expiresAt as string).getTime() - Date.now()) / 3_600_000;
+    expect(hours).toBeGreaterThan(47.9);
+    expect(hours).toBeLessThanOrEqual(48);
+    expect((await getCustomer(a, db))?.rounds.map((r) => r.name)).toEqual(['Due Wed']);
+  });
+
+  it('gives a taken name a number so building twice in a day works', async () => {
+    const a = await person(db, 'Ann');
+    const one = await createRoundFrom({ name: 'Due Wed' }, [a], 's', db, { temporary: true });
+    const two = await createRoundFrom({ name: 'Due Wed' }, [a], 's', db, { temporary: true });
+    expect(one.ok && two.ok).toBe(true);
+    expect((await listRounds(db, { withTemporary: true })).map((r) => r.name).sort()).toEqual(['Due Wed', 'Due Wed (2)']);
+  });
+
+  it('forgets an expired temporary round and keeps its customers; purge removes it for good', async () => {
+    const a = await person(db, 'Ann');
+    const made = await createRoundFrom({ name: 'Old plan' }, [a], 's', db, { temporary: true });
+    if (!made.ok) throw new Error('made');
+    await db.query("UPDATE rounds SET expires_at = now() - interval '1 minute' WHERE id = $1", [made.id]);
+    expect(await listRounds(db, { withTemporary: true })).toEqual([]);
+    expect(await purgeExpiredRounds(db)).toBe(1);
+    expect((await db.query('SELECT id FROM rounds')).length).toBe(0);
+    expect(await getCustomer(a, db)).not.toBeNull();
+    expect(await purgeExpiredRounds(db)).toBe(0);
+  });
+
+  it('saving a temporary round makes it a standing one, renamed with a day', async () => {
+    const a = await person(db, 'Ann');
+    const made = await createRoundFrom({ name: 'Due Wed' }, [a], 's', db, { temporary: true });
+    if (!made.ok) throw new Error('made');
+    expect((await makeRoundPermanent(made.id, { name: 'Thursday loop', weekday: '4' }, 's', db)).ok).toBe(true);
+    const [kept] = await listRounds(db);
+    expect(kept).toMatchObject({ name: 'Thursday loop', weekday: 4, expiresAt: null });
+    expect((await makeRoundPermanent('999', { name: 'x' }, 's', db)).ok).toBe(false);
+    expect((await purgeExpiredRounds(db))).toBe(0);
   });
 });

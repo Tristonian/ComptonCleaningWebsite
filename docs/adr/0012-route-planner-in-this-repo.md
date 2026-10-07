@@ -34,7 +34,7 @@ the robust fix and is a hand step for Tristan (`wrangler secret put MAPBOX_SERVE
 
 ## Building a round on the fly
 
-From the Rounds screen (or the admin Home card) Sam can tick customers who are due this week, name a round and build it; it opens on its best-order preview. It is an ordinary round: customers keep any other rounds, and it can be deleted afterwards (customers are untouched), so one-off rounds do not pile up forever.
+From the Rounds screen (or the admin Home card) Sam can tick customers who are due this week, name a round and build it; it opens on its best-order preview. Tristan's decision (2026-10-07): a round built this way is **temporary**, expiring 48 hours after it was built (`rounds.expires_at`, migration 0014), and can be **saved as a round** (name, usual day) to keep it. There is deliberately no delete button: expired rounds are hidden at once and purged when the Rounds screen loads, so one-off rounds never pile up. Temporary rounds show (marked ⏳) where rounds are worked (Rounds, Work, Home, the customer list and map) but not in the pickers for a customer's rounds, the calendar or bulk setup. A taken name gets "(2)", "(3)"... so building twice in a day works. Customers keep any rounds they were already in.
 
 ## Not done
 
