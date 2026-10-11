@@ -15,10 +15,12 @@ production serialises `$undefined`. The secrets script was supposedly run on 202
 
 While investigating, Tristan also asked for a better default: the map now opens on a Bristol-wide
 view centred on Lyde Green (Sam's base) instead of staying hidden until a postcode/location/tap sets
-a real point; it eases in to a close zoom once a real point exists. That's **on `main`**
-(`src/components/ContactForm.tsx`, `src/components/PinMap.tsx`) — typecheck and all 290 tests passed
-before the push — but it has **not been deployed anywhere, and has not been seen in a browser**
-(no Chrome DevTools session was available this session to check it visually).
+a real point; it eases in to a close zoom once a real point exists. That's **on `main` and `staging`**
+(`src/components/ContactForm.tsx`, `src/components/PinMap.tsx`; commit 9b933ed) — typecheck and all 290
+tests passed. **Deployed to staging 2026-10-11 (Worker `6005f82d`)**; staging's page serialises a real
+Mapbox key. It has **not been seen in a browser** yet.
+**Not deployed to production on purpose:** `main` carries all of session 7, and production's Neon is
+still through 0011, so migrate 0012-0014 first (see the state table). The map fix rides along with that deploy.
 
 1. On a machine with `.env.local`, reset just the one secret (not the whole `set-prod-secrets.sh` —
    that also mints a new `SESSION_SECRET` and signs everyone out of `/admin`):
@@ -26,8 +28,8 @@ before the push — but it has **not been deployed anywhere, and has not been se
    CLOUDFLARE_ACCOUNT_ID=f63f844d70738925fc7fb251893122cc
    grep -m1 "^MAPBOX_TOKEN=" .env.local | cut -d= -f2- | tr -d '"\r' | npx wrangler secret put MAPBOX_TOKEN
    ```
-2. Pull latest `main`, deploy the default-map-view change (staging first per the usual flow, or
-   straight to production since it is small, tested and additive — Tristan's call).
+2. Migrate production 0012-0014, then deploy `main` to production (the map change goes with it;
+   it can't go alone because `main` includes session 7).
 3. Check the contact form on a real phone: the map should load centred on Lyde Green, zoomed out to
    show Bristol, before any postcode is typed; then zoom in once a postcode/location/tap sets a real
    pin. Confirm sending still works both with and without touching the map.
@@ -40,7 +42,7 @@ before the push — but it has **not been deployed anywhere, and has not been se
 | `npm test` | **290 / 290** (36 files). The database tests boot an in-process Postgres each and take about a minute; hook timeout is 60 s. |
 | `npx next build` | clean |
 | Git | `main` = `staging` = `origin` after the wrap-up push. A push deploys nothing: there is no deploy workflow. The repo is **public**. |
-| Staging | https://staging.comptoncleaning.co.uk, Worker `4eb82e88`, deployed this session. Neon `staging` migrated through **0014**; 16 demo customers + 3 "Demo" rounds. Wire-checked: `/` and `/cy` 200, the new admin routes 307 to login, `/api/admin/earnings/export` 401 when signed out, and the away message replaces the Call button when hours are set (probe hours removed again: `call_hours` is empty on staging). |
+| Staging | https://staging.comptoncleaning.co.uk, Worker `6005f82d` (2026-10-11, adds the Bristol-wide default map; was `4eb82e88`). Neon `staging` migrated through **0014**; 16 demo customers + 3 "Demo" rounds. Wire-checked: `/` and `/cy` 200, the new admin routes 307 to login, `/api/admin/earnings/export` 401 when signed out, and the away message replaces the Call button when hours are set (probe hours removed again: `call_hours` is empty on staging). |
 | Production | https://comptoncleaning.co.uk, Worker `c157c645` = **session 6 code**. Neon `production` is through **0011 only**: **0012, 0013 and 0014 are not applied there**. Deploying session 7 code without migrating first would 500 the public page (it reads `call_hours`; it fails open on a read error, so the public page survives, but the admin Calendar, Settings and Earnings would not). Order: migrate 0012-0014, then deploy. |
 | Neon `dev` branch | only through 0009 (run `npm run db:migrate` for local dev). `next build` prints a Postgres error trace while prerendering because of this; the build still succeeds. |
 | Local DNS | this machine once cached "no such domain" for the apex; `curl --doh-url https://cloudflare-dns.com/dns-query https://comptoncleaning.co.uk/` proves it is up. |
