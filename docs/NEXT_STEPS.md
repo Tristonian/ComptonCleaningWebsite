@@ -6,6 +6,32 @@ Read `CLAUDE.md`, then this, then `ROADMAP.md`. Start a fresh session with `/nex
 
 _Last revised: **2026-10-07, end of session 7** (built overnight and over the next days with Tristan; staging only)._
 
+## 🔴 Do this first (added 2026-10-11, ad-hoc session, not a full wrapup)
+
+Tristan noticed the contact form's map wasn't showing on **production**. Confirmed by comparing the
+raw page HTML of staging vs production: staging serialises a real Mapbox key for `mapboxToken`,
+production serialises `$undefined`. The secrets script was supposedly run on 2026-10-04 (see
+`CLAUDE.md` status); either `MAPBOX_TOKEN` didn't take then or it has since been cleared.
+
+While investigating, Tristan also asked for a better default: the map now opens on a Bristol-wide
+view centred on Lyde Green (Sam's base) instead of staying hidden until a postcode/location/tap sets
+a real point; it eases in to a close zoom once a real point exists. That's **on `main`**
+(`src/components/ContactForm.tsx`, `src/components/PinMap.tsx`) — typecheck and all 290 tests passed
+before the push — but it has **not been deployed anywhere, and has not been seen in a browser**
+(no Chrome DevTools session was available this session to check it visually).
+
+1. On a machine with `.env.local`, reset just the one secret (not the whole `set-prod-secrets.sh` —
+   that also mints a new `SESSION_SECRET` and signs everyone out of `/admin`):
+   ```
+   CLOUDFLARE_ACCOUNT_ID=f63f844d70738925fc7fb251893122cc
+   grep -m1 "^MAPBOX_TOKEN=" .env.local | cut -d= -f2- | tr -d '"\r' | npx wrangler secret put MAPBOX_TOKEN
+   ```
+2. Pull latest `main`, deploy the default-map-view change (staging first per the usual flow, or
+   straight to production since it is small, tested and additive — Tristan's call).
+3. Check the contact form on a real phone: the map should load centred on Lyde Green, zoomed out to
+   show Bristol, before any postcode is typed; then zoom in once a postcode/location/tap sets a real
+   pin. Confirm sending still works both with and without touching the map.
+
 ## State, verified at the end of session 7 (2026-10-07)
 
 | Check | Result |

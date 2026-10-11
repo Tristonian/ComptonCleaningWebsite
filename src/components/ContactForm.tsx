@@ -11,7 +11,8 @@ import { sendEnquiry, type ContactState } from '@/app/contact-actions';
 import { formatPhone, normaliseEmail, normalisePhone, normalisePostcode } from '@/lib/enquiry';
 import { isPlausibleUkPoint, type LatLng } from '@/lib/geo';
 
-// Loaded only when a pin is first shown: the map library is large.
+// Code-split: the map library is large. It is still requested as soon as a token is present,
+// since the map now shows a default view rather than waiting for a pin.
 const PinMap = dynamic(() => import('@/components/PinMap').then((m) => m.PinMap), { ssr: false });
 
 const field = 'w-full rounded-lg border border-ink/20 bg-white px-3 py-3 text-base text-ink';
@@ -20,11 +21,17 @@ const errorText = 'text-sm font-semibold text-red-700';
 
 type Locating = 'idle' | 'working' | 'denied' | 'failed';
 
+// Shown before a visitor has picked a real spot: Sam's base, Lyde Green, zoomed out so all of
+// Bristol is visible. The map eases in to a close zoom itself once a real point arrives.
+const HOME: LatLng = { lat: 51.5, lng: -2.5 };
+const HOME_ZOOM = 11;
+
 /**
- * Contact form with a location helper: "Use my location" (browser geolocation, then a free
- * postcode lookup) and a Mapbox pin the customer must tap or drag to confirm. If the map cannot
- * be shown (no token, blocked, no WebGL) or there is no pin yet, nothing is forced and typing
- * still works. Phone, email and postcode are checked as they type; the server checks them again.
+ * Contact form with a location helper: the map opens on a default Bristol-wide view (Sam's base,
+ * Lyde Green) and only has to be confirmed once a real spot exists — "Use my location" (browser
+ * geolocation, then a free postcode lookup), a typed postcode, or a tap/drag on the map itself.
+ * If the map cannot be shown (no token, blocked, no WebGL), nothing is forced and typing still
+ * works. Phone, email and postcode are checked as they type; the server checks them again.
  */
 export function ContactForm({
   mapboxToken,
@@ -73,8 +80,10 @@ export function ContactForm({
     return <ContactSent snapshot={snapshot} mapboxToken={mapboxToken} />;
   }
 
-  const mapShown = Boolean(point && mapboxToken && !mapBroken);
-  const needsPin = mapShown && !confirmed;
+  const mapShown = Boolean(mapboxToken && !mapBroken);
+  // Sending without touching the map is fine until a real point exists (a typed postcode, "use my
+  // location", or a tap) — the default Bristol-wide preview is not something to confirm against.
+  const needsPin = mapShown && point !== null && !confirmed;
 
   const phoneBad = phone.trim() !== '' && !normalisePhone(phone);
   const emailBad = email.trim() !== '' && !normaliseEmail(email);
@@ -358,11 +367,12 @@ export function ContactForm({
         </Ed>
       )}
 
-      {mapShown && point && mapboxToken && (
+      {mapShown && mapboxToken && (
         <div ref={mapBox} className="flex flex-col gap-2">
           <PinMap
             token={mapboxToken}
-            point={point}
+            point={point ?? HOME}
+            zoom={HOME_ZOOM}
             onMove={(p) => {
               setPoint(p);
               setConfirmed(true);
@@ -378,7 +388,7 @@ export function ContactForm({
             <Ed
               id="contact.loc.confirm"
               as="p"
-              className={`rounded-lg px-3 py-2 text-sm font-semibold ${attempted ? 'bg-red-50 text-red-700 ring-1 ring-red-600' : 'bg-amber-50 text-amber-900 ring-1 ring-amber-400'}`}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold ${attempted && needsPin ? 'bg-red-50 text-red-700 ring-1 ring-red-600' : 'bg-amber-50 text-amber-900 ring-1 ring-amber-400'}`}
             >
               Please tap the map or drag the pin onto your home to confirm where we’re going, then send.
             </Ed>

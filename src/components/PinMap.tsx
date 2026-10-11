@@ -4,6 +4,11 @@ import { useEffect, useRef } from 'react';
 import type { LatLng } from '@/lib/geo';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
+// Once a real point arrives (postcode lookup, "use my location", a tap), ease in to this zoom
+// so the visitor can see individual houses to confirm against. The initial `zoom` prop is just
+// the first paint; it is never reapplied.
+const CONFIRM_ZOOM = 17;
+
 /**
  * A small map with one draggable pin (ADR 0005 era: Mapbox, chosen by Tristan 2026-10-04).
  * mapbox-gl is imported on demand, so a visitor who never opens the map never downloads it.
@@ -14,19 +19,22 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 export function PinMap({
   token,
   point,
+  zoom = CONFIRM_ZOOM,
   onMove,
   onFail,
 }: {
   token: string;
   point: LatLng;
+  /** Zoom level on first paint only (e.g. a wide default view before a real point exists). */
+  zoom?: number;
   onMove: (p: LatLng) => void;
   onFail: () => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<import('mapbox-gl').Map | null>(null);
   const marker = useRef<import('mapbox-gl').Marker | null>(null);
-  const latest = useRef({ onMove, onFail, point });
-  latest.current = { onMove, onFail, point };
+  const latest = useRef({ onMove, onFail, point, zoom });
+  latest.current = { onMove, onFail, point, zoom };
 
   useEffect(() => {
     let cancelled = false;
@@ -44,7 +52,7 @@ export function PinMap({
           container: box.current,
           style: 'mapbox://styles/mapbox/streets-v12',
           center: [start.lng, start.lat],
-          zoom: 17,
+          zoom: latest.current.zoom,
           minZoom: 5,
           maxZoom: 20,
           attributionControl: true,
@@ -102,8 +110,8 @@ export function PinMap({
     if (Math.abs(cur.lat - point.lat) < 1e-7 && Math.abs(cur.lng - point.lng) < 1e-7) return;
     pin.setLngLat([point.lng, point.lat]);
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) m.jumpTo({ center: [point.lng, point.lat] });
-    else m.easeTo({ center: [point.lng, point.lat], duration: 600 });
+    if (reduce) m.jumpTo({ center: [point.lng, point.lat], zoom: CONFIRM_ZOOM });
+    else m.easeTo({ center: [point.lng, point.lat], zoom: CONFIRM_ZOOM, duration: 600 });
   }, [point]);
 
   return <div ref={box} className="h-64 w-full overflow-hidden rounded-xl ring-1 ring-ink/20" />;
