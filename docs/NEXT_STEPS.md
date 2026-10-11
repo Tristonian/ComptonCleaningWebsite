@@ -6,33 +6,19 @@ Read `CLAUDE.md`, then this, then `ROADMAP.md`. Start a fresh session with `/nex
 
 _Last revised: **2026-10-07, end of session 7** (built overnight and over the next days with Tristan; staging only)._
 
-## 🔴 Do this first (added 2026-10-11, ad-hoc session, not a full wrapup)
+## Production deployed 2026-10-11 (ad-hoc session)
 
-Tristan noticed the contact form's map wasn't showing on **production**. Confirmed by comparing the
-raw page HTML of staging vs production: staging serialises a real Mapbox key for `mapboxToken`,
-production serialises `$undefined`. The secrets script was supposedly run on 2026-10-04 (see
-`CLAUDE.md` status); either `MAPBOX_TOKEN` didn't take then or it has since been cleared.
+Tristan ran, in order: `db:migrate -- --branch production` (0012-0014), `npm run deploy`, and reset the
+`MAPBOX_TOKEN` secret (PowerShell: read it from `.env.local`, pipe to `wrangler secret put MAPBOX_TOKEN --env=""`;
+the first attempt used `grep`, which PowerShell lacks, so nothing was set until the retry).
+Verified on the wire: `/`, `/cy`, `/privacy` 200; `/admin` 307; `/api/admin/earnings/export` 401 (route only exists
+in session 7 code); production now serialises a real `pk.` Mapbox key. Migrations were not independently
+checked from outside (assumed applied since the deploy ran after them).
 
-While investigating, Tristan also asked for a better default: the map now opens on a Bristol-wide
-view centred on Lyde Green (Sam's base) instead of staying hidden until a postcode/location/tap sets
-a real point; it eases in to a close zoom once a real point exists. That's **on `main` and `staging`**
-(`src/components/ContactForm.tsx`, `src/components/PinMap.tsx`; commit 9b933ed) — typecheck and all 290
-tests passed. **Deployed to staging 2026-10-11 (Worker `6005f82d`)**; staging's page serialises a real
-Mapbox key. It has **not been seen in a browser** yet.
-**Not deployed to production on purpose:** `main` carries all of session 7, and production's Neon is
-still through 0011, so migrate 0012-0014 first (see the state table). The map fix rides along with that deploy.
-
-1. On a machine with `.env.local`, reset just the one secret (not the whole `set-prod-secrets.sh` —
-   that also mints a new `SESSION_SECRET` and signs everyone out of `/admin`):
-   ```
-   CLOUDFLARE_ACCOUNT_ID=f63f844d70738925fc7fb251893122cc
-   grep -m1 "^MAPBOX_TOKEN=" .env.local | cut -d= -f2- | tr -d '"\r' | npx wrangler secret put MAPBOX_TOKEN
-   ```
-2. Migrate production 0012-0014, then deploy `main` to production (the map change goes with it;
-   it can't go alone because `main` includes session 7).
-3. Check the contact form on a real phone: the map should load centred on Lyde Green, zoomed out to
-   show Bristol, before any postcode is typed; then zoom in once a postcode/location/tap sets a real
-   pin. Confirm sending still works both with and without touching the map.
+Still to do: look at the contact-form map on a real phone on production (opens Bristol-wide on Lyde Green, eases in
+once a postcode/location/tap sets a pin; sending works with and without touching the map), sign in to production
+`/admin` once to confirm Calendar, Settings and Earnings load (they need 0012-0013), and note the new production
+Worker version id here.
 
 ## State, verified at the end of session 7 (2026-10-07)
 
@@ -43,7 +29,7 @@ still through 0011, so migrate 0012-0014 first (see the state table). The map fi
 | `npx next build` | clean |
 | Git | `main` = `staging` = `origin` after the wrap-up push. A push deploys nothing: there is no deploy workflow. The repo is **public**. |
 | Staging | https://staging.comptoncleaning.co.uk, Worker `6005f82d` (2026-10-11, adds the Bristol-wide default map; was `4eb82e88`). Neon `staging` migrated through **0014**; 16 demo customers + 3 "Demo" rounds. Wire-checked: `/` and `/cy` 200, the new admin routes 307 to login, `/api/admin/earnings/export` 401 when signed out, and the away message replaces the Call button when hours are set (probe hours removed again: `call_hours` is empty on staging). |
-| Production | https://comptoncleaning.co.uk, Worker `c157c645` = **session 6 code**. Neon `production` is through **0011 only**: **0012, 0013 and 0014 are not applied there**. Deploying session 7 code without migrating first would 500 the public page (it reads `call_hours`; it fails open on a read error, so the public page survives, but the admin Calendar, Settings and Earnings would not). Order: migrate 0012-0014, then deploy. |
+| Production | https://comptoncleaning.co.uk, **session 7 code** deployed 2026-10-11 (Worker `c157c645` was session 6; new version id not recorded). Neon `production` migrated through 0014 (not independently verified). `MAPBOX_TOKEN` reset and live. Admin on production still unchecked. |
 | Neon `dev` branch | only through 0009 (run `npm run db:migrate` for local dev). `next build` prints a Postgres error trace while prerendering because of this; the build still succeeds. |
 | Local DNS | this machine once cached "no such domain" for the apex; `curl --doh-url https://cloudflare-dns.com/dns-query https://comptoncleaning.co.uk/` proves it is up. |
 
@@ -147,7 +133,7 @@ still through 0011, so migrate 0012-0014 first (see the state table). The map fi
 ```text
 Work in C:\Users\Trist\Documents\GitHub\ComptonCleaningWebsite (Next.js 15 + Tailwind on Cloudflare Workers via OpenNext, Neon Postgres, R2; Sam's window-cleaning site + work tracker). Start every message with "Tristan, ". Run /nextsteps (or read CLAUDE.md, docs/NEXT_STEPS.md, docs/ROADMAP.md, ADRs 0008, 0009, 0010, 0011 and 0012 in that order).
 
-STATE (2026-10-07, end of session 7, verify first): typecheck clean; 290/290 tests (slow, ~1-2 min); build clean. main = staging = origin. Staging: Worker 4eb82e88, Neon staging through 0014 (calendar, call hours, Earnings, route planner, temporary rounds all live there), 16 "Demo:" customers. Production: Worker c157c645 = session 6 code; Neon production through 0011 ONLY (0012-0014 not applied); nobody has signed in to production /admin; 7 Worker secrets present, not verified non-empty. Repo is public. Tristan has used on a phone: weather tile, Take photo, Coming tomorrow switching off, and the drag-to-order list (first build buzzed and hid rows; the rewrite "feels better" but rows could still disappear when dragged wildly, fixed again, not re-tried). Everything else from sessions 4-7 is unchecked on a device. Sam has been emailed twice (from hello@, cc Tristan) summarising the new features as test-site only.
+STATE (2026-10-07, end of session 7; production since deployed 2026-10-11 with 0012-0014, see the section above, so ignore the production parts of this line): typecheck clean; 290/290 tests (slow, ~1-2 min); build clean. main = staging = origin. Staging: Worker 4eb82e88, Neon staging through 0014 (calendar, call hours, Earnings, route planner, temporary rounds all live there), 16 "Demo:" customers. Production: Worker c157c645 = session 6 code; Neon production through 0011 ONLY (0012-0014 not applied); nobody has signed in to production /admin; 7 Worker secrets present, not verified non-empty. Repo is public. Tristan has used on a phone: weather tile, Take photo, Coming tomorrow switching off, and the drag-to-order list (first build buzzed and hid rows; the rewrite "feels better" but rows could still disappear when dragged wildly, fixed again, not re-tried). Everything else from sessions 4-7 is unchecked on a device. Sam has been emailed twice (from hello@, cc Tristan) summarising the new features as test-site only.
 
 TASKS, in order:
 1. With Tristan: sign in to production /admin, verify each production secret is non-empty through the live Worker, submit a test enquiry, then docs/GO-LIVE.md step 5. Then, ONLY if Tristan says so, hand him the PowerShell commands to take session 7 live ($env:CLOUDFLARE_ACCOUNT_ID = "f63f844d70738925fc7fb251893122cc"; npm run db:migrate -- --branch production (applies 0012, 0013 and 0014); then npm run deploy). The assistant cannot run production migrate/deploy (permission check blocks it). Afterwards Sam sets his call hours in Settings.
