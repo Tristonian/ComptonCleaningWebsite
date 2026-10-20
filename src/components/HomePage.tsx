@@ -1,4 +1,8 @@
+import { headers } from 'next/headers';
 import { Ed } from '@/components/Ed';
+import { SEO_COPY, jsonLdString, localBusinessJsonLd } from '@/lib/seo';
+import { siteOrigin } from '@/lib/seo-metadata';
+import { serviceText } from '@/lib/services-custom';
 import { ContactForm } from '@/components/ContactForm';
 import { getEnv } from '@/lib/env';
 import { BlockZone } from '@/components/BlockZone';
@@ -49,8 +53,26 @@ export async function HomePage() {
   const order = zoneOrder(services.map((s) => s.id));
   const zb = (zone: string) => blocks.filter((b) => b.zone === zone);
   const hide = (id: string) => hidden.includes(id);
+
+  const requested = (await headers()).get('x-locale');
+  const locale = requested === 'cy' ? 'cy' : 'en';
+  const origin = siteOrigin();
+  const serviceNames = [
+    ...(hide('service-windows') ? [] : ['Window cleaning']),
+    ...(hide('service-gutters') ? [] : ['Gutter cleaning and repair']),
+    ...(hide('service-other') ? [] : ['Pressure washing', 'Render cleaning']),
+    ...services.filter((s) => !hide(`svc-${s.id}`)).map((s) => serviceText(s, 'title', locale)),
+  ];
+  const jsonLd = localBusinessJsonLd({
+    origin,
+    locale,
+    logoUrl: new URL(appearance.logo.src, origin).toString(),
+    serviceNames,
+    description: SEO_COPY[locale].description,
+  });
   return (
     <main>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }} />
       {/* Hero: the business card. CCS, the squeegee, the web address, the phone number. */}
       <HeroHeader colour={appearance.heroColour}>
         <HeroMenu hidden={hidden} />

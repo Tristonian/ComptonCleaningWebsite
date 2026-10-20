@@ -154,9 +154,12 @@ FINISH with /wrapup.
 - [ ] Ask Sam what the agency actually provides (invoice/contract), who owns the domain, any
       existing site and the Google Business Profile, and any minimum term. Do not cancel until the
       new site is live and indexed. Does the domain currently point at anything?
-- [ ] LocalBusiness JSON-LD (name, phone, areas served, services).
+- [x] LocalBusiness JSON-LD (name, phone, areas served, services). Built, uncommitted/undeployed: `src/lib/seo.ts`. No address, hours or ratings until Sam supplies them. Check with Google's Rich Results Test after deploy.
 - [ ] Area pages (Lyde Green, BS16, BS5, Chepstow, Caldicot, Newport), editable with the pencil.
-- [ ] Sitemap, hreflang for `/cy`, robots, titles/descriptions per page; Search Console set up.
+- [x] Sitemap, hreflang for `/cy`, robots, titles/descriptions, canonical, Open Graph/Twitter cards. Built, undeployed. Staging is noindex + `Disallow: /` (production only is indexable).
+- [ ] Search Console + Bing Webmaster set up and sitemap submitted (needs Sam/Tristan's Google login).
+- [ ] Welsh title/description in `SEO_COPY` need a native-speaker review.
+- [ ] Dedicated social share image (1200x630); currently the logo.
 - [ ] Sam: add `comptoncleaning.co.uk` to the Business Profile ("Add website"), keep photos and
       service areas current, ask every happy customer for a review (link: `REVIEW_URL` in
       `src/lib/business.ts`). Keep name/address/phone identical everywhere.

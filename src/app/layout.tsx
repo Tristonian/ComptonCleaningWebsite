@@ -5,11 +5,20 @@ import { EditModeProvider } from '@/components/EditMode';
 import { getAdmin } from '@/lib/auth/session';
 import { getOverrides } from '@/lib/content/store';
 import { isLocale } from '@/lib/content/shared';
+import { getEnv } from '@/lib/env';
+import { isIndexable } from '@/lib/seo';
+import { siteOrigin } from '@/lib/seo-metadata';
 
-export const metadata: Metadata = {
-  title: 'Compton Cleaning | Window cleaning',
-  description: 'Reliable, insured local window cleaning. 4-weekly, 8-weekly and one-off cleans.',
-};
+// Fallbacks for pages without their own metadata. Staging is kept out of search results here as
+// well as in robots.txt (a Disallow alone does not stop a URL being indexed).
+export function generateMetadata(): Metadata {
+  return {
+    metadataBase: new URL(siteOrigin()),
+    title: { default: 'Compton Cleaning | Window cleaning', template: '%s' },
+    description: 'Regular, affordably priced window cleaning in Bristol, Chepstow, Caldicot and Newport.',
+    ...(isIndexable(getEnv('APP_ENV')) ? {} : { robots: { index: false, follow: false } }),
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
