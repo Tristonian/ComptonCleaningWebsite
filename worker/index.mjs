@@ -44,6 +44,7 @@ export default {
     const hit = await cache.match(key);
     if (hit) {
       const out = new Response(hit.body, hit);
+      if (PAGES.has(url.pathname)) out.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
       out.headers.set('x-edge-cache', 'HIT');
       return out;
     }
