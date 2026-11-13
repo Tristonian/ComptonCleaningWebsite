@@ -22,6 +22,8 @@ Worker invocation too. Search indexing (SEO commit, 20 Oct) brought crawler traf
 - A deploy leaves up to 60s of cached HTML pointing at the previous build's chunks in each data centre.
 - The call-hours switch on the public Call button can lag by up to 60s.
 - `x-edge-cache: HIT|MISS` on responses shows what happened.
-- Next.js 15.5.27 is now refused by the OpenNext build ("not supported by the Next.js team"). A build needs
-  `--dangerouslyUseUnsupportedNextVersion` until Next is upgraded. Separate follow-up.
+- Next.js 15 fell out of the Next.js support window and OpenNext refused to build it, so Next is now 16.4.6 with
+  @opennextjs/cloudflare 1.20.17. Typecheck, 300 tests and `next build` pass. On Windows the OpenNext packaging
+  step needs symlink permission (turn on Developer Mode, or build in WSL/Linux), otherwise it fails with EPERM.
+  `next lint` no longer exists in Next 16 (nothing runs it).
 - If this is still not enough: Workers Paid ($5/month, 30s CPU) on Sam's account.
