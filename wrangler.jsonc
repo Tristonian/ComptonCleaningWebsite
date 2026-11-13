@@ -1,7 +1,7 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	// Built by `opennextjs-cloudflare build` into .open-next/ - see package.json scripts.
-	"main": ".open-next/worker.js",
+	// worker/index.mjs wraps the worker that `opennextjs-cloudflare build` writes to .open-next/ (edge cache, ADR 0013).
+	"main": "worker/index.mjs",
 	"name": "compton-cleaning",
 	"compatibility_date": "2026-07-22",
 	"compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
