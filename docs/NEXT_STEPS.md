@@ -20,11 +20,13 @@ once a postcode/location/tap sets a pin; sending works with and without touching
 `/admin` once to confirm Calendar, Settings and Earnings load (they need 0012-0013), and note the new production
 Worker version id here.
 
-## CPU limit email (2026-11-13), fix built, NOT deployed
-Cloudflare warned Sam: free plan 10ms CPU exceeded 100+ times/24h. Built ADR 0013 (edge cache wrapper
-`worker/index.mjs` + batched Neon reads) on `staging`, tests pass (300). Next upgraded to 16.4.6 (OpenNext 1.20.17).
-To do: turn on Windows Developer Mode (symlinks, else the OpenNext build fails EPERM) or build in WSL, deploy staging, check `x-edge-cache` HIT on `/` and `/img/...`, check admin edit shows at once, then main.
-Then look at Workers metrics for "Exceeded CPU" falling. Fallback: Workers Paid, $5/month.
+## CPU limit email (2026-11-13), fixed and deployed to staging AND production
+ADR 0013 (edge cache `worker/index.mjs` + batched Neon reads) and Next 16.4.6 / OpenNext 1.20.17 are live on both
+(Windows Developer Mode is now on, which the OpenNext build needs). Verified on the wire: `/` is MISS then HIT with
+`Cache-Control: public, max-age=0, must-revalidate`; a request with a `cc_session` cookie bypasses the cache.
+NOT verified: an admin edit showing straight away (needs Sam or Tristan logged in), image `HIT` (no uploaded
+image on staging), anything on a phone. Watch Workers metrics over the next days for "Exceeded CPU" falling;
+fallback is Workers Paid ($5/month).
 
 ## State, verified at the end of session 7 (2026-10-07)
 
