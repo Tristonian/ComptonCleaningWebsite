@@ -20,6 +20,13 @@ once a postcode/location/tap sets a pin; sending works with and without touching
 `/admin` once to confirm Calendar, Settings and Earnings load (they need 0012-0013), and note the new production
 Worker version id here.
 
+## CPU limit email (2026-11-13), fix built, NOT deployed
+Cloudflare warned Sam: free plan 10ms CPU exceeded 100+ times/24h. Built ADR 0013 (edge cache wrapper
+`worker/index.mjs` + batched Neon reads) on `staging`, tests pass (300). To do: build needs
+`--dangerouslyUseUnsupportedNextVersion` (Next 15.5.27 now refused by OpenNext; upgrade Next as its own task),
+deploy staging, check `x-edge-cache` HIT on `/` and `/img/...`, check admin edit shows at once, then main.
+Then look at Workers metrics for "Exceeded CPU" falling. Fallback: Workers Paid, $5/month.
+
 ## State, verified at the end of session 7 (2026-10-07)
 
 | Check | Result |
